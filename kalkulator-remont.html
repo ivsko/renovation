@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Калкулатор за ремонт</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: practical site office — calm, exact, numbers first
+   IDEA: a builder's set-out drawing: to-scale plan with dimension chains and a material schedule
+   PICTURE: the live layout drawing of boards / profiles / tiles, redrawn on every input
+   COLOUR and TYPE: stone ground, white sheet, black ink, steel blue for profiles, brick for cuts and warnings; Schibsted Grotesk
+   LAYOUT: tabs; inputs column left, key figure + drawing + schedule right; phone: figure, drawing, inputs, schedule */
+:root{color-scheme:light dark;--bg:light-dark(#e7e4df,#171513);--pn:light-dark(#fff,#211e1b);--ink:light-dark(#151311,#ece7e0);--mu:light-dark(#625c55,#a59c91);--ln:light-dark(#d4cec6,#3a352f);--ac:light-dark(#c8371e,#ec6a50);--wd:light-dark(#e8d2a8,#7a5d3b);--wd3:light-dark(#dcc192,#6a5033);--wd2:light-dark(#a8875c,#3e2e1c);--gk:light-dark(#f1efea,#3a3733);--st:light-dark(#3d6f9e,#8fbbe6);--uw:light-dark(#1d2b38,#d3dde6);--ua:light-dark(#d98a1c,#f0a640);--ob:light-dark(#9a948c,#5c5650)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Schibsted Grotesk",system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(20px,3vw,40px) max(4vw,14px)}
+.wrap{max-width:1240px;margin:0 auto}
+header.band{padding-bottom:0}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.05;margin:0 0 6px;font-weight:800;text-wrap:balance}
+.sub{margin:0 0 18px;color:var(--mu)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:2px solid var(--ink)}
+.tabs a{padding:11px 18px;min-height:44px;color:var(--ink);text-decoration:none;font-weight:600;border-radius:6px 6px 0 0}
+.tabs a[aria-selected=true]{background:var(--ink);color:var(--bg)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.pane{display:grid;grid-template-columns:310px minmax(0,1fr);grid-template-areas:"f k" "f d" "f t";grid-template-rows:auto auto 1fr;gap:18px 24px;align-items:start}
+.pane[hidden]{display:none}
+form{grid-area:f;background:var(--pn);border-radius:8px;padding:16px 16px 8px}
+.key{grid-area:k;display:flex;flex-wrap:wrap;gap:6px 28px;align-items:baseline}
+.key b{font-size:clamp(40px,6vw,52px);line-height:1;font-weight:800;white-space:nowrap}
+.key span{color:var(--mu)}
+.draw{grid-area:d;background:var(--pn);border-radius:8px;padding:12px}
+.tbl{grid-area:t}
+h3{font-size:13px;margin:14px 0 6px;color:var(--mu);font-weight:600;border-top:1px solid var(--ln);padding-top:10px}
+h3:first-child{border:0;margin-top:0;padding-top:0}
+h3[hidden],.fl[hidden]{display:none}
+.fl{display:grid;grid-template-columns:minmax(0,1fr) 132px;gap:8px;align-items:center;margin-bottom:8px;font-size:14px}
+.in{display:flex;align-items:center;border:1px solid var(--ln);border-radius:6px;background:var(--bg)}
+.in input{width:100%;border:0;background:none;color:var(--ink);font:inherit;font-size:16px;padding:8px;min-height:40px;text-align:right}
+.in em{font-style:normal;color:var(--mu);font-size:13px;padding-right:8px;white-space:nowrap}
+select{width:100%;font:inherit;font-size:15px;min-height:40px;border:1px solid var(--ln);border-radius:6px;background:var(--bg);color:var(--ink);padding:6px}
+input[type=color]{width:100%;height:40px;border:1px solid var(--ln);border-radius:6px;background:var(--bg);padding:3px;cursor:pointer}
+.obs{display:grid;gap:8px;margin-bottom:8px}
+.ob{border:1px solid var(--ln);border-radius:6px;padding:8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;font-size:12px;color:var(--mu)}
+.ob label{display:grid;gap:2px}
+.ob input,.ob select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--ln);border-radius:5px;padding:5px 6px;min-height:36px}
+.ob .top{grid-column:1/-1;display:flex;gap:6px;align-items:center}
+.ob .top select{flex:1}
+.ob button{min-height:36px;padding:0 12px;background:var(--bg);color:var(--ink);border:1px solid var(--ln)}
+label.add{display:block;text-align:center;padding:9px;border:1px dashed var(--mu);border-radius:6px;cursor:pointer;margin:8px 0;font-size:14px;color:var(--ink)}
+button.add{width:100%;background:var(--bg);color:var(--ink);border:1px dashed var(--mu);margin-bottom:8px}
+.fig{position:relative;min-height:200px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.fig+.fig,.fig+.fig4,.fig4+.fig{margin-top:10px}.fig4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 10px}.fig4[hidden]{display:none}.fig4.one{grid-template-columns:minmax(0,1fr)}.fig4 .fig+.fcap{margin-top:0}.fcap{text-align:center;margin:-2px 0 6px}
+@media(max-width:600px){.fig4{grid-template-columns:minmax(0,1fr)}}
+.seg{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
+.seg button{min-height:38px;padding:0 14px;background:var(--bg);color:var(--ink);font-size:14px}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--mu);margin-top:8px}
+.leg i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:5px;border:1px solid var(--mu)}
+.notes{margin:10px 0 0;padding:0;list-style:none;font-size:14px}
+.notes li{padding:6px 10px;border-radius:6px;margin-top:6px;background:var(--bg)}
+.notes li.w{background:color-mix(in srgb,var(--ac) 14%,var(--pn));border-left:3px solid var(--ac)}
+table{width:100%;border-collapse:collapse;background:var(--pn);border-radius:8px;overflow:hidden;font-size:15px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--ln);text-align:left;vertical-align:middle}
+th{font-size:13px;color:var(--mu);font-weight:600}
+td.n,th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+td.nt{color:var(--mu);font-size:13px}
+td input{width:88px;font:inherit;font-size:16px;padding:6px;border:1px solid var(--ln);border-radius:6px;background:var(--bg);color:var(--ink);text-align:right}
+.sw{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid var(--mu);vertical-align:-2px;margin-right:7px}
+tfoot td{font-weight:800;border:0}
+.act{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+button{font:inherit;font-weight:600;min-height:44px;padding:0 18px;border:0;border-radius:6px;background:var(--ink);color:var(--bg);cursor:pointer}
+.small{font-size:13px;color:var(--mu)}
+.mlist{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.chip{min-height:36px;padding:0 10px;font-size:13px;font-weight:600;background:var(--bg);color:var(--ink);border:1px solid var(--ln)}.chip.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.madd{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;margin-bottom:8px}.madd select{font-size:14px}.madd button{grid-column:1/-1;min-height:40px}
+.medit .top input{flex:1;font:inherit;font-size:16px;padding:6px;border:1px solid var(--ln);border-radius:5px;background:var(--bg);color:var(--ink);min-height:36px}.medit .top button{flex:1}
+.cuth{font-size:15px;color:var(--ink);margin-top:20px}table.cut{font-size:13px}table.cut td,table.cut th{padding:6px 8px}
+#G-f{touch-action:none}
+.aibox{margin-top:10px}.aiimg{display:block;max-width:100%;margin-top:10px;border:1px solid var(--ln);border-radius:6px}a.btn{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:6px;background:var(--ink);color:var(--bg);text-decoration:none;font-weight:600}a.btn[hidden],.aiimg[hidden]{display:none}.aibox textarea{width:100%;font:inherit;font-size:14px;padding:10px;border:1px solid var(--ln);border-radius:6px;background:var(--pn);color:var(--ink)}
+svg .wall{fill:none;stroke:var(--ink);stroke-width:3}
+svg .bd{fill:var(--wd);stroke:var(--wd2);stroke-width:.7}
+svg .bd2{fill:var(--wd3);stroke:var(--wd2);stroke-width:.7}
+svg .bc{fill:color-mix(in srgb,var(--wd) 72%,var(--ac));stroke:var(--wd2);stroke-width:.7}
+svg .bs{fill:var(--ac);stroke:var(--wd2);stroke-width:.7}
+svg .gk{fill:var(--gk);stroke:var(--mu);stroke-width:1.2}
+svg .gkc{fill:color-mix(in srgb,var(--gk) 78%,var(--ac));stroke:var(--mu);stroke-width:1.2}
+svg .bgw{fill:color-mix(in srgb,var(--bg) 55%,var(--pn))}
+svg .cw{fill:var(--st)}
+svg .uw{fill:var(--uw)}
+svg .ua{fill:var(--ua)}
+svg .xx{fill:var(--ua);stroke:var(--pn);stroke-width:1}
+svg .spl{fill:var(--ac);opacity:.85}
+svg .udb{fill:none;stroke:var(--uw);stroke-width:6}
+svg .prf{stroke:var(--st);stroke-width:1.2;stroke-dasharray:5 4;opacity:.7}
+svg .hg{fill:var(--ac);stroke:var(--pn);stroke-width:1.2}
+svg .dw{fill:var(--ink)}
+svg .open{fill:var(--pn);stroke:var(--ink);stroke-width:1.5}
+svg .obs{fill:var(--ob);stroke:var(--ink);stroke-width:1.5}
+svg .tl{stroke-width:.8}
+svg .nh{pointer-events:none}
+svg .nw{fill:none;stroke:var(--ac);stroke-width:2}
+svg .dim{stroke:var(--mu);stroke-width:1}
+svg .dl{fill:var(--mu);font-size:12px}
+svg .lb{fill:var(--ink);font-size:12px;font-weight:600;paint-order:stroke;stroke:var(--pn);stroke-width:3px;stroke-linejoin:round}
+svg .sm{fill:var(--st);font-size:11px;font-weight:600}
+svg .arc{fill:none;stroke:var(--mu);stroke-width:1;stroke-dasharray:3 3}
+svg .env{stroke:var(--ink);stroke-width:1.2;stroke-dasharray:6 4;opacity:.7}
+svg .drn{fill:var(--uw);stroke:var(--pn);stroke-width:1}
+svg .fx{fill:var(--pn);stroke:var(--ink);stroke-width:1.4}svg .fx2{fill:light-dark(#e6edf1,#33393d);stroke:var(--ink);stroke-width:1}svg .fxl{stroke:var(--mu);stroke-width:1}
+svg .top .fx{fill:#fdfdfc;stroke:#a9a6a0}svg .top .fx2{fill:#e2ebef;stroke:#a9a6a0}svg .top .fxl{stroke:#d2cfc9}svg .top .bd{fill:#d8b886;stroke:#a8865a}svg .top .bd2{fill:#cdaa77;stroke:#a8865a}
+svg .iso rect,svg .iso line,svg .iso ellipse{vector-effect:non-scaling-stroke}svg .iso3{stroke:var(--ink);stroke-width:1.2;stroke-linejoin:round}
+svg .arw{stroke:var(--ink);stroke-width:1.4}
+.ponly{display:none}
+body.printing .ponly{display:block}
+body.printing .tabs,body.printing form,body.printing .act,body.printing .seg,body.printing .sub,body.printing #G-d,body.printing #G-d2,body.printing #L-d,body.printing .noprint{display:none!important}
+body.printing .wrap{max-width:700px}
+body.printing .pane:not([hidden]){display:block}body.printing .pane>*{margin-bottom:12px}
+body.pall .pane[hidden]{display:block}
+body.printing .draw{padding:0}
+.psum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 14px;font-size:12px;margin:6px 0 10px}
+.phd h2{font-size:24px;margin:0 0 4px;line-height:1.1}
+.pcap{font-weight:600;font-size:13px;margin:14px 0 2px}
+@media print{@page{size:A4;margin:10mm}:root,:root[data-theme]{color-scheme:light}body{background:#fff}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ header.band,main.band{padding:0 0 8px}h1{font-size:22px}.key b{font-size:30px}.fig,.pcap{break-inside:avoid;break-after:avoid}.fig{break-after:auto}
+ body.pall .pane+.pane{break-before:page}table{font-size:11px}th,td{padding:4px 6px}tr{break-inside:avoid}td input{border:0;background:none;width:60px;padding:0}.notes li{padding:3px 8px;font-size:12px}}
+@media(min-width:901px){form{position:sticky;top:10px;max-height:calc(100vh - 20px);overflow-y:auto;overscroll-behavior:contain}}
+@media(max-width:900px){.pane{display:flex;flex-direction:column;gap:14px}.pane .phd{order:-1}.key{order:0}.draw{order:1;position:sticky;top:0;z-index:5;max-height:56vh;overflow:auto;box-shadow:0 8px 18px #0003}form{order:2}.tbl{order:3}}
+body.printing form,body.printing .draw{position:static;max-height:none;overflow:visible;box-shadow:none}
+.aiv{display:block;margin:6px 0}.aiv select{width:auto;display:inline-block}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mu)}.stack td:empty{display:none}.fl{grid-template-columns:minmax(0,1fr) 150px}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<header class="band"><div class="wrap">
+<h1>Калкулатор за ремонт</h1>
+<p class="ponly small" id="pdate"></p><p class="sub">Въведи размерите — получаваш количества, схема на подредбата и списък за магазина.</p>
+<nav class="tabs" role="tablist">
+<a href="#parket" role="tab" data-t="p">Паркет</a>
+<a href="#gipsokarton" role="tab" data-t="d">Гипсокартон</a>
+<a href="#banya" role="tab" data-t="b">Плочки за баня</a>
+<a href="#obzavezhdane" role="tab" data-t="f">Обзавеждане</a>
+</nav>
+</div></header>
+<main class="band"><div class="wrap">
+<section class="pane" id="P-p">
+<div class="ponly phd"><h2 id="PT-p"></h2><div class="psum" id="PS-p"></div></div><form id="F-p"></form>
+<div class="key" id="K-p"></div>
+<div class="draw"><div class="seg" id="V-p"><button type="button" data-vw="p|plan">План</button><button type="button" data-vw="p|top">Отгоре</button><button type="button" data-vw="p|walls">По стени</button><button type="button" data-vw="p|3d">Изометрия</button></div><div class="fig" id="G-p" data-v="plan" data-cap="Паркет — план"></div><div class="fig" id="G-p4" data-v="top" data-cap="Паркет — изглед отгоре" hidden></div><div class="fig4" id="G-p5" data-v="walls" hidden></div><div class="fig" id="G-p3" data-v="3d" data-cap="Паркет — изометрия" hidden></div>
+<div class="leg"><span><i style="background:var(--wd)"></i>цяла дъска</span><span><i style="background:color-mix(in srgb,var(--wd) 72%,var(--ac))"></i>рязана</span><span><i style="background:var(--ac)"></i>парче под 30 см</span><span><i style="background:var(--ob)"></i>колона / комин</span></div>
+<ul class="notes" id="N-p"></ul></div>
+<div class="tbl" id="T-p"></div>
+</section>
+<section class="pane" id="P-d" hidden>
+<div class="ponly phd"><h2 id="PT-d"></h2><div class="psum" id="PS-d"></div></div><form id="F-d"></form>
+<div class="key" id="K-d"></div>
+<div class="draw"><div class="seg" id="V-d"></div><div class="fig" id="G-d"></div><div class="fig" id="G-d2" hidden></div><div id="PX-d" class="ponly"></div>
+<div class="leg" id="L-d"></div>
+<ul class="notes" id="N-d"></ul></div>
+<div class="tbl" id="T-d"></div>
+</section>
+<section class="pane" id="P-b" hidden>
+<div class="ponly phd"><h2 id="PT-b"></h2><div class="psum" id="PS-b"></div></div><form id="F-b"></form>
+<div class="key" id="K-b"></div>
+<div class="draw"><div class="seg" id="V-b"><button type="button" data-vw="b|plan">План и развивка</button><button type="button" data-vw="b|top">Отгоре</button><button type="button" data-vw="b|walls">По стени</button><button type="button" data-vw="b|3d">Изометрия</button></div><div class="fig" id="G-b" data-v="plan" data-cap="Баня — план на пода"></div><div class="fig" id="G-b2" data-v="plan" data-cap="Баня — развивка на стените"></div><div class="fig" id="G-b4" data-v="top" data-cap="Баня — изглед отгоре" hidden></div><div class="fig4" id="G-b5" data-v="walls" hidden></div><div class="fig" id="G-b3" data-v="3d" data-cap="Баня — изометрия" hidden></div>
+<div class="leg"><span><i style="background:repeating-linear-gradient(45deg,#0003 0 2px,transparent 2px 5px)"></i>рязана плочка</span><span><i style="border:2px solid var(--ac)"></i>ивица под 1/3 плочка</span><span><i style="background:var(--ob)"></i>колона / комин</span><span><i style="background:var(--uw)"></i>сифон</span></div>
+<ul class="notes" id="N-b"></ul></div>
+<div class="tbl" id="T-b"></div>
+</section>
+<section class="pane" id="P-f" hidden>
+<div class="ponly phd"><h2 id="PT-f"></h2><div class="psum" id="PS-f"></div></div><form id="F-f"></form>
+<div class="key" id="K-f"></div>
+<div class="draw"><div class="seg" id="V-f"><button type="button" data-vw="f|plan">План</button><button type="button" data-vw="f|top">Отгоре</button><button type="button" data-vw="f|walls">По стени</button></div><div class="fig" id="G-f" data-v="plan" data-cap="Обзавеждане — план"></div><div class="fig" id="G-f4" data-v="top" data-cap="Обзавеждане — изглед отгоре" hidden></div><div class="fig4 one" id="G-f5" data-v="walls" hidden></div>
+<ul class="notes" id="N-f"></ul></div>
+<div class="tbl" id="T-f"></div>
+</section>
+<p class="small">Количествата са ориентировъчни, по типични разходни норми (Knauf, Ceresit и др.). Провери нормите на конкретния продукт преди поръчка. Размерите и цените се пазят само в този браузър.</p>
+</div></main>
+<script>
+{
+const $=q=>document.querySelector(q);
+let st={};try{st=JSON.parse(localStorage.getItem('remont-calc')||'{}')}catch(e){}
+st.pr=st.pr||{};st.obsp=st.obsp||[];st.obsb=st.obsb||[];if(!st.fixb)st.fixb=[{t:'s',wall:'3',x:1.5,w:90,d:90},{t:'w',wall:'2',x:0.15,w:37,d:65},{t:'m',wall:'4',x:0.9,w:60,d:45}];
+const FX={m:{n:'Мивка с шкаф',w:60,d:45,e:'vanity unit with basin'},w:{n:'Моноблок',w:37,d:65,e:'close-coupled toilet'},s:{n:'Душ кабина',w:90,d:90,e:'glass shower cabin'},b:{n:'Вана',w:170,d:70,e:'bathtub'}};
+const save=()=>{try{localStorage.setItem('remont-calc',JSON.stringify(st))}catch(e){}};
+const fmt=(x,d=2)=>Number(x).toLocaleString('bg-BG',{maximumFractionDigits:d});
+const C=Math.ceil;
+const PAL={gw:{n:'Бяло и графит',cW1:'#f1f1ee',cW2:'#4b4f53',cW3:'#9aa0a3',cF1:'#5d6165',cF2:'#e4e4e0',cFr:'#b8b2a6',cG:'#c9c9c4'},
+ sn:{n:'Пясък и орех',cW1:'#ece4d6',cW2:'#86664a',cW3:'#c6a46a',cF1:'#a88c6c',cF2:'#e9dfcf',cFr:'#c6a46a',cG:'#cbbfae'},
+ bl:{n:'Бяло и морско синьо',cW1:'#f4f6f6',cW2:'#2e5d78',cW3:'#9fc0cf',cF1:'#d9e0e2',cF2:'#2e5d78',cFr:'#c9d8df',cG:'#c3cbcd'},
+ mr:{n:'Мрамор и злато',cW1:'#efeeeb',cW2:'#d5d1ca',cW3:'#c3a15a',cF1:'#2f2f30',cF2:'#ece9e4',cFr:'#c3a15a',cG:'#d2cfc9'},
+ gr:{n:'Маслинено и крем',cW1:'#f3f0e7',cW2:'#66806c',cW3:'#cdbf9e',cF1:'#cfc8b8',cF2:'#66806c',cFr:'#d9cdae',cG:'#c8c2b3'},
+ cw:{n:'Бетон и дърво',cW1:'#d4d2ce',cW2:'#8f8a83',cW3:'#a77b52',cF1:'#7d7a75',cF2:'#d4d2ce',cFr:'#a77b52',cG:'#b9b6b0'},
+ bw:{n:'Черно и бяло',cW1:'#f4f4f2',cW2:'#1f1f20',cW3:'#8c8c8c',cF1:'#1f1f20',cF2:'#f4f4f2',cFr:'#b8a06a',cG:'#9a9a9a'},
+ pk:{n:'Пудра и бежово',cW1:'#f6efec',cW2:'#d9a8a0',cW3:'#e9d6c9',cF1:'#e9e3de',cF2:'#d9a8a0',cFr:'#c9a27a',cG:'#e2d8d2'},
+ dg:{n:'Тъмнозелено и месинг',cW1:'#efece4',cW2:'#2f4a3e',cW3:'#c6a15b',cF1:'#2f4a3e',cF2:'#efece4',cFr:'#c6a15b',cG:'#cfc8b9'},
+ tc:{n:'Теракота и бяло',cW1:'#f5f2ee',cW2:'#b8643f',cW3:'#7d4a33',cF1:'#b8643f',cF2:'#efe7dd',cFr:'#7d4a33',cG:'#d6cbbf'}};
+const CO=[['0','Цвят A'],['1','Цвят B'],['2','Цвят C']];
+const FIELDS={
+p:[{h:'Стая'},
+ {id:'pL',l:'Дължина (стени 1 и 3)',u:'м',v:4.6},{id:'pW',l:'Ширина (стени 2 и 4)',u:'м',v:3.4},
+ {id:'pDir',l:'Дъските вървят',o:[['l','по дължината'],['w','по ширината']]},
+ {id:'pDoor',l:'Ширина на вратите (общо)',u:'м',v:0.9},
+ {h:'Колони и комини'},{obs:'p'},
+ {h:'Паркет / ламинат'},
+ {id:'pBL',l:'Дължина на дъската',u:'мм',v:1380,s:1},{id:'pBW',l:'Ширина на дъската',u:'мм',v:193,s:1},
+ {id:'pPack',l:'Квадратура в пакет',u:'м²',v:2.13},
+ {h:'Подредба'},
+ {id:'pPat',l:'Вид',o:[['n','Стъпаловидно (през N реда)'],['f','Фиксирано отместване'],['r','Свободно (случайно)'],['d','Диагонал 45°'],['hb','Рибена кост']]},
+ {id:'pN',l:'Повтаря се през (редове)',o:[['2','2 реда (1/2)'],['3','3 реда (1/3)'],['4','4 реда (1/4)'],['5','5 реда (1/5)'],['6','6 реда (1/6)']],m:'pPat:n'},
+ {id:'pOff',l:'Отместване на всеки ред',u:'см',v:40,s:1,m:'pPat:f'},
+ {id:'pWaste',l:'Фира',u:'%',v:7,s:1},{id:'pGap',l:'Фуга до стената',u:'мм',v:10,s:1},
+ {id:'pRoll',l:'Подложка в ролка',u:'м²',v:10,s:0.5}],
+f:[{h:'Стая'},
+ {btn:'syncp',l:'Вземи размерите и подредбата от „Паркет“'},{id:'fL',l:'Дължина (стени 1 и 3)',u:'м',v:6.0},{id:'fW',l:'Ширина (стени 2 и 4)',u:'м',v:4.2},{id:'fH',l:'Височина на тавана',u:'м',v:2.7},
+ {h:'Под и стени'},
+ {id:'fFloor',l:'Под',o:[['wood','Ламинат / паркет'],['parq','Паркет от раздел „Паркет“'],['tile','Плочки 60×60'],['tileL','Плочки 120×60'],['micro','Микроцимент']]},{id:'fFc',l:'Цвят на пода',c:'#c9a77c'},
+ {id:'fWc',l:'Цвят на стените',c:'#efebe4'},{id:'fAcc',l:'Акцентна стена',o:[['0','Няма'],['1','Стена 1'],['2','Стена 2'],['3','Стена 3'],['4','Стена 4']]},{id:'fAccC',l:'Акцентен цвят',c:'#5d6d64',m:'fAcc:1|2|3|4'},
+ 
+ {h:'Врата и прозорец'},
+ {id:'fDn',l:'Врата на',o:[['1','Стена 1'],['2','Стена 2'],['3','Стена 3'],['4','Стена 4']]},{id:'fDW',l:'Врата: ширина (0 = няма)',u:'м',v:0.9},{id:'fDX',l:'Врата: позиция по стената',u:'м',v:4.2},
+ {id:'fWn',l:'Прозорец на',o:[['3','Стена 3'],['1','Стена 1'],['2','Стена 2'],['4','Стена 4']]},{id:'fWW',l:'Прозорец: ширина (0 = няма)',u:'м',v:1.8},{id:'fWH',l:'Прозорец: височина',u:'м',v:1.5},{id:'fWS',l:'Прозорец: от пода',u:'м',v:0.85},{id:'fWX',l:'Прозорец: позиция по стената',u:'м',v:3.6},
+ {h:'Мебели и кухня'},{furn:1},
+ {h:'Шкафове от „Разкрой“'},{rk:1},
+ {h:'Кухня — какво да има'},
+ {id:'fKfr',l:'Хладилник',o:[['col','Вграден в колона'],['free','Свободностоящ'],['under','Под плота'],['none','Няма']]},
+ {id:'fKov',l:'Фурна',o:[['under','Под котлона'],['col','В колона на височина'],['none','Няма']]},
+ {id:'fKmw',l:'Микровълнова',o:[['none','Няма'],['col','В колона'],['up','В горен шкаф']]},
+ {id:'fKdw',l:'Съдомиялна',o:[['60','60 см'],['45','45 см'],['0','Няма']]},
+ {id:'fKdr',l:'Модули с чекмеджета',o:[['1','1'],['2','2'],['3','3'],['0','Няма']]},
+ {id:'fKsk',l:'Мивка',o:[['1','Единична'],['2','Двойна']]},
+ {id:'fKup',l:'Горни шкафове',o:[['v','Вертикални врати'],['h','Хоризонтални (вдигащи се) врати'],['mix','Хоризонтални + отворен рафт'],['o','Само отворени рафтове'],['none','Без горни шкафове']]},
+ {id:'fKuh',l:'Горни: височина',o:[['720','72 см'],['900','90 см'],['ceil','До тавана']],m:'fKup:v|h|mix|o'},
+ {id:'fKhd',l:'Абсорбатор',o:[['wall','Стенен (комин)'],['built','Вграден в горен шкаф'],['none','Няма']]},
+ {id:'fKhn',l:'Дръжки',o:[['bar','С дръжки'],['none','Без дръжки (push / профил)']]},
+ {id:'fKt',l:'Цвят на плота',c:'#3f3f3f'},{id:'fKbs',l:'Цвят на гърба',c:'#d9d4cc'},
+ {h:'Декоративни стенни панели'},{pnl:1}],
+d:[{h:'Какво строим'},
+ {id:'dMode',l:'Тип',o:[['w','Преградна стена'],['l','Обшивка на стени'],['c','Окачен таван'],['r','Цяла стая: стени + таван']]},
+ {id:'dL',l:'Дължина (стени 1 и 3)',u:'м',v:4.2},
+ {id:'dW',l:'Ширина (стени 2 и 4)',u:'м',v:3.6,m:'dMode:c|l|r'},
+ {id:'dH',l:'Височина',u:'м',v:2.7,m:'dMode:w|l|r'},
+ {id:'dSel',l:'Кои стени',o:[['1234','Всички 4 стени'],['1','Стена 1'],['12','Стени 1 и 2'],['13','Стени 1 и 3'],['123','Стени 1, 2 и 3']],m:'dMode:l|r'},
+ {h:'Конструкция'},
+ {id:'dLin',l:'Обшивка на стени',o:[['h','CD/UD + директни окачвачи'],['f','Свободностояща CW/UW']],m:'dMode:l|r'},
+ {id:'dS',l:'Профили по стените през',o:[['600','600 мм'],['400','400 мм']],m:'dMode:w|l|r'},
+ {id:'dSys',l:'Таван',o:[['2','Двустепенен (носещи + монтажни CD)'],['1','Едностепенен (директни окачвачи)']],m:'dMode:c|r'},
+ {id:'dSc',l:'Монтажни CD на тавана през',o:[['500','500 мм'],['400','400 мм']],m:'dMode:c|r'},
+ {id:'dPL',l:'Дължина на профилите',o:[['3000','3 м'],['4000','4 м']]},
+ {h:'Плоскости'},
+ {id:'dBH',l:'Размер на плоскостта',o:[['2000','1200 × 2000'],['2500','1200 × 2500'],['2600','1200 × 2600'],['3000','1200 × 3000']]},
+ {id:'dSides',l:'Обшивка',o:[['2','От двете страни'],['1','От едната страна']],m:'dMode:w'},
+ {id:'dLay',l:'Слоеве',o:[['1','1 слой'],['2','2 слоя']]},
+ {id:'dWool',l:'Минерална вата',o:[['1','Да'],['0','Не']],m:'dMode:w|l|r'},
+ {id:'dWaste',l:'Фира',u:'%',v:10,s:1},
+ {id:'dDet',l:'Спецификация',o:[['s','Само основното'],['f','Подробна']]},
+ {h:'Врата (стена 1)',m:'dMode:w|l|r'},
+ {id:'dDW',l:'Ширина (0 = без врата)',u:'м',v:0.9,m:'dMode:w|l|r'},{id:'dDH',l:'Височина',u:'м',v:2.05,m:'dMode:w|l|r'},{id:'dDX',l:'Отстояние от левия край',u:'м',v:0.6,m:'dMode:w|l|r'},
+ {h:'Прозорец',m:'dMode:l|r'},
+ {id:'dWW',l:'Ширина (0 = няма)',u:'м',v:1.2,m:'dMode:l|r'},
+ {id:'dWn',l:'На стена',o:[['3','Стена 3'],['2','Стена 2'],['4','Стена 4'],['1','Стена 1']],m:'dMode:l|r'},
+ {id:'dWH',l:'Височина',u:'м',v:1.4,m:'dMode:l|r'},{id:'dWS',l:'От пода',u:'м',v:0.9,m:'dMode:l|r'},{id:'dWX',l:'От левия ъгъл',u:'м',v:1.2,m:'dMode:l|r'}],
+b:[{h:'Баня'},
+ {id:'bL',l:'Дължина (стени 1 и 3)',u:'м',v:2.4},{id:'bW',l:'Ширина (стени 2 и 4)',u:'м',v:1.8},
+ {id:'bH',l:'Височина на облицовката',u:'м',v:2.4},
+ {id:'bDW',l:'Врата: ширина (стена 1)',u:'м',v:0.7},{id:'bDH',l:'Врата: височина',u:'м',v:2.0},{id:'bDX',l:'Врата: от левия ъгъл',u:'м',v:0.25},
+ {id:'bWW',l:'Прозорец: ширина (0 = няма)',u:'м',v:0.6},
+ {id:'bWn',l:'Прозорец на стена',o:[['3','Стена 3'],['2','Стена 2'],['4','Стена 4'],['1','Стена 1']]},
+ {id:'bWH',l:'Прозорец: височина',u:'м',v:0.6},{id:'bWS',l:'Прозорец: от пода',u:'м',v:1.5},{id:'bWX',l:'Прозорец: от левия ъгъл',u:'м',v:0.9},
+ {h:'Колони, комини, щрангове'},{obs:'b'},{h:'Санитария'},{fix:'b'},
+ {h:'Плочки за под'},
+ {id:'bFa',l:'Ширина',u:'см',v:60,s:1},{id:'bFb',l:'Дължина',u:'см',v:60,s:1},{id:'bFbox',l:'м² в кашон',u:'м²',v:1.44},
+ {id:'bFlay',l:'Подредба на пода',o:[['s','Права'],['c','Шахмат (2 цвята)'],['o','Тухлена (отместване 1/2)'],['d','Диагонал 45°'],['dc','Диагонал шахмат']]},
+ {h:'Плочки за стени'},
+ {id:'bTl',l:'Дълга страна',u:'см',v:60,s:1},{id:'bTs',l:'Къса страна',u:'см',v:30,s:1},{id:'bTor',l:'Ориентация',o:[['v','Вертикално (изправени)'],['h','Хоризонтално (легнали)']]},{id:'bTlay',l:'Подредба по стените',o:[['s','Права (фуга в фуга)'],['o','Тухлена (отместване 1/2)'],['t','Отместване 1/3']]},{id:'bTbox',l:'м² в кашон',u:'м²',v:1.44},
+ {id:'bJ',l:'Фуга (под и стени)',u:'мм',v:2,s:0.5},
+ {id:'bStart',l:'Подреждане',o:[['c','Центрирано (равни крайни парчета)'],['k','От ъгъла']]},
+ {h:'Цветове и фриз'},
+ {id:'bPal',l:'Комбинация',o:[...Object.entries(PAL).map(([k,p])=>[k,p.n]),['x','Собствени цветове']]},
+ {id:'cW1',l:'Стени – цвят A',c:'#f1f1ee'},{id:'cW2',l:'Стени – цвят B',c:'#4b4f53'},{id:'cW3',l:'Стени – цвят C',c:'#9aa0a3'},
+ {id:'bPer',l:'Комбинация по стени',o:[['0','Еднаква за всички стени'],['1','Различна за всяка стена']]},{wallc:1},
+ {id:'bHz',m:'bPer:0',l:'Хоризонтални зони',o:[['2','2 зони (долу / горе)'],['1','1 зона'],['3','3 зони (долу / среда / горе)']]},
+ {id:'bSplit',l:'Граница 1 / хор. фриз на',u:'м',v:1.2},{id:'bSplit2',l:'Граница 2 (при 3 зони) на',u:'м',v:1.8},
+ {id:'bZc1',l:'Долна зона (или всичко)',o:CO,v:'1',m:'bPer:0'},{id:'bZc2',l:'Средна зона',o:CO,v:'2',m:'bHz:3&bPer:0'},{id:'bZc3',l:'Горна зона',o:CO,v:'0',m:'bHz:2|3&bPer:0'},
+ {id:'bVn',l:'Вертикални цветни ленти',o:[['0','Няма'],['1','1 лента'],['2','2 ленти']],m:'bPer:0'},
+ {id:'bV1w',l:'Лента 1: на',o:[['3','Стена 3'],['1','Стена 1'],['2','Стена 2'],['4','Стена 4'],['a','Всички стени (в средата)']],m:'bVn:1|2&bPer:0'},{id:'bV1x',l:'Лента 1: от левия ъгъл',u:'м',v:0.9,m:'bVn:1|2&bV1w:1|2|3|4&bPer:0'},{id:'bV1s',l:'Лента 1: ширина',u:'м',v:0.6,m:'bVn:1|2&bPer:0'},{id:'bV1c',l:'Лента 1: цвят',o:CO,v:'2',m:'bVn:1|2&bPer:0'},
+ {id:'bV2w',l:'Лента 2: на',o:[['2','Стена 2'],['1','Стена 1'],['3','Стена 3'],['4','Стена 4'],['a','Всички стени (в средата)']],m:'bVn:2&bPer:0'},{id:'bV2x',l:'Лента 2: от левия ъгъл',u:'м',v:0.3,m:'bVn:2&bV2w:1|2|3|4&bPer:0'},{id:'bV2s',l:'Лента 2: ширина',u:'м',v:0.6,m:'bVn:2&bPer:0'},{id:'bV2c',l:'Лента 2: цвят',o:CO,v:'2',m:'bVn:2&bPer:0'},
+ {id:'bAcc',l:'Акцентна стена',o:[['0','Няма'],['1','Стена 1'],['2','Стена 2'],['3','Стена 3'],['4','Стена 4']],m:'bPer:0'},{id:'bAccC',l:'Акцентна стена: цвят',o:CO,v:'1',m:'bAcc:1|2|3|4&bPer:0'},
+ {id:'bFr',l:'Фриз (бордюр)',o:[['1','Да'],['0','Не']]},
+ {id:'bFrO',l:'Посока на фриза',o:[['h','Хоризонтален'],['v','Вертикален'],['hv','Хоризонтален + вертикален']],m:'bFr:1'},{id:'bFrVw',l:'Вертикален фриз на',o:[['3','Стена 3'],['2','Стена 2'],['4','Стена 4'],['1','Стена 1'],['a','Всички стени (в средата)']],m:'bFr:1&bFrO:v|hv'},{id:'bFrVx',l:'Вертикален: от левия ъгъл',u:'м',v:1.0,m:'bFr:1&bFrO:v|hv&bFrVw:1|2|3|4'},
+ {id:'bFrH',l:'Фриз: ширина на лентата',u:'см',v:8,s:0.5,m:'bFr:1'},{id:'bFrL',l:'Фриз: дължина на парче',u:'см',v:30,s:1,m:'bFr:1'},
+ 
+ {id:'cF1',l:'Под – цвят',c:'#5d6165'},{id:'cF2',l:'Под – втори цвят',c:'#e4e4e0',m:'bFlay:c|dc'},
+ {id:'cFr',l:'Фриз – цвят',c:'#b8b2a6',m:'bFr:1'},{id:'cG',l:'Фугa – цвят',c:'#c9c9c4'},
+ {h:'Сифон'},
+ {id:'bDr',l:'Подов сифон',o:[['p','Точков'],['l','Линеен'],['n','Без подов сифон']]},
+ {id:'bDrX',l:'Сифон: от стена 4',u:'м',v:1.9,m:'bDr:p'},{id:'bDrY',l:'Сифон: от стена 1',u:'м',v:1.3,m:'bDr:p'},
+ {id:'bDrWall',l:'Линеен: до стена',o:[['3','Стена 3'],['2','Стена 2'],['4','Стена 4'],['1','Стена 1']],m:'bDr:l'},
+ {id:'bDrL',l:'Линеен: дължина',u:'см',v:70,s:1,m:'bDr:l'},{id:'bDrO',l:'Линеен: от левия ъгъл',u:'м',v:1.5,m:'bDr:l'},
+ {h:'Хидроизолация'},
+ {id:'bShow',l:'Душ зона (стени, дълж.)',u:'м',v:2.0},
+ {id:'bWaste',l:'Фира',u:'%',v:10,s:1}]};
+const NAMES={p:'parket',d:'gipsokarton',b:'banya',f:'obzavezhdane'};
+const s=id=>$('#'+id).value;
+const v=id=>{const x=parseFloat(String($('#'+id).value).replace(',','.'));return isFinite(x)&&x>0?x:0};
+
+/* ---- колони и комини ---- */
+function renderObs(t){const L=st['obs'+t];
+ $('#O-'+t).innerHTML=L.map((o,i)=>`<div class="ob"><div class="top"><select data-o="${t}|${i}|t" aria-label="Тип"><option value="c"${o.t==='c'?' selected':''}>Комин</option><option value="k"${o.t==='k'?' selected':''}>Колона</option><option value="s"${o.t==='s'?' selected':''}>Щранг / шахта</option></select><button type="button" data-del="${t}|${i}" aria-label="Премахни">Премахни</button></div>
+ ${[['w','Ширина, см'],['d','Дълбочина, см'],['x','От стена 4, м'],['y','От стена 1, м']].map(([k,l])=>`<label>${l}<input type="number" inputmode="decimal" min="0" step="${k==='w'||k==='d'?1:0.01}" value="${o[k]}" data-o="${t}|${i}|${k}"></label>`).join('')}</div>`).join('')||'<span class="small">Няма добавени.</span>'}
+if(!st.bw)st.bw=[1,2,3,4].map(()=>({hz:'2',c0:'1',c1:'2',c2:'0',bn:'0',b0x:'0.9',b0w:'0.6',b0c:'2',b1x:'0.3',b1w:'0.6',b1c:'2'}));
+function renderWC(){const sl=(n,k,opts)=>`<select data-wc="${n}|${k}">${opts.map(([v2,l])=>`<option value="${v2}"${st.bw[n-1][k]==v2?' selected':''}>${l}</option>`).join('')}</select>`,cs=CO;
+ $('#WC-b').innerHTML=[1,2,3,4].map(n=>{const q=st.bw[n-1],hz2=+q.hz;let x=`<div class="ob"><div class="top"><b style="color:var(--ink);font-size:14px">Стена ${n}</b></div>
+ <label>Зони${sl(n,'hz',[['1','1 зона'],['2','2 зони'],['3','3 зони']])}</label><label>${hz2===1?'Цвят':'Долна зона'}${sl(n,'c0',cs)}</label>
+ ${hz2===3?`<label>Средна зона${sl(n,'c1',cs)}</label>`:''}${hz2>1?`<label>Горна зона${sl(n,'c2',cs)}</label>`:''}
+ <label>Верт. ленти${sl(n,'bn',[['0','Няма'],['1','1'],['2','2']])}</label>`;
+ for(let i=0;i<+q.bn;i++)x+=`<label>Лента ${i+1}: от левия ъгъл, м<input type="number" step="0.01" min="0" value="${q['b'+i+'x']}" data-wc="${n}|b${i}x"></label><label>Лента ${i+1}: ширина, м<input type="number" step="0.01" min="0" value="${q['b'+i+'w']}" data-wc="${n}|b${i}w"></label><label>Лента ${i+1}: цвят${sl(n,'b'+i+'c',cs)}</label>`;
+ return x+'</div>'}).join('')}
+function renderFix(){$('#X-b').innerHTML=st.fixb.map((o,i)=>`<div class="ob"><div class="top"><select data-f="${i}|t" aria-label="Вид">${Object.entries(FX).map(([k,x])=>`<option value="${k}"${o.t===k?' selected':''}>${x.n}</option>`).join('')}</select><button type="button" data-delfix="${i}">Премахни</button></div>
+ <label>До стена<select data-f="${i}|wall">${[1,2,3,4].map(n=>`<option value="${n}"${+o.wall===n?' selected':''}>Стена ${n}</option>`).join('')}</select></label>
+ ${[['x',+o.wall%2?'От стена 4, м':'От стена 1, м',0.01],['w','Ширина, см',1],['d','Дълбочина, см',1]].map(([k,l,s2])=>`<label>${l}<input type="number" inputmode="decimal" min="0" step="${s2}" value="${o[k]}" data-f="${i}|${k}"></label>`).join('')}</div>`).join('')||'<span class="small">Няма добавена.</span>'}
+function obsInfo(list,L,W,warn){const r={area:0,exp:0,con:0,outer:0,inner:0,rects:[]};
+ list.forEach((o,i)=>{const x=(+o.x||0)*1000,y=(+o.y||0)*1000,w=(+o.w||0)*10,d=(+o.d||0)*10;if(w<1||d<1)return;
+  if(x+w>L+5||y+d>W+5){warn.push(`${['Комин','Колона','Щранг'][['c','k','s'].indexOf(o.t)]||'Обект'} ${i+1} излиза извън стаята — провери размерите.`);return}
+  const l=x<=5,t=y<=5,rt=x+w>=L-5,b=y+d>=W-5;
+  r.area+=w*d/1e6;r.exp+=((l?0:d)+(rt?0:d)+(t?0:w)+(b?0:w))/1000;r.con+=((l?d:0)+(rt?d:0)+(t?w:0)+(b?w:0))/1000;
+  [[l,t],[rt,t],[l,b],[rt,b]].forEach(([a,c])=>{if(!a&&!c)r.outer++;else if(a!==c)r.inner++;else r.inner--});
+  r.rects.push({x,y,w,d,t:o.t,n:i+1})});
+ return r}
+const inObs=(R,x,y,w,h)=>R.some(o=>x>=o.x-.5&&x+w<=o.x+o.w+.5&&y>=o.y-.5&&y+h<=o.y+o.d+.5);
+const hitObs=(R,x,y,w,h)=>R.some(o=>x<o.x+o.w&&x+w>o.x&&y<o.y+o.d&&y+h>o.y);
+
+/* ---------- ОБЗАВЕЖДАНЕ ---------- */
+const DK='#2b2b2b';
+const sofaP=(w,d,c)=>{const a=Math.min(200,w*.16),bk=Math.min(220,d*.26);return[B(0,0,w,d,0,380,shade(c,.85)),B(a,bk,w-a,d,380,450,c),B(0,0,w,bk,0,820,c),B(0,0,a,d,0,620,c),B(w-a,0,w,d,0,620,c)]};
+const sofaLP=(w,d,c)=>{const a=180,bk=220,dm=Math.min(950,d),cw=Math.min(900,w*.4);return[B(0,0,w,dm,0,380,shade(c,.85)),B(w-cw,dm,w,d,0,380,shade(c,.85)),B(a,bk,w,dm,380,450,c),B(w-cw,dm,w,d,380,450,c),B(0,0,w,bk,0,820,c),B(0,0,a,dm,0,620,c)]};
+const chairAt=(cx,cy,dir,c)=>{const s2=225,P=[];let seat,back;
+ if(dir==='S'){back=[cx-s2,cy-240,cx+s2,cy-180];seat=[cx-s2,cy-180,cx+s2,cy+240]}else if(dir==='N'){back=[cx-s2,cy+180,cx+s2,cy+240];seat=[cx-s2,cy-240,cx+s2,cy+180]}
+ else if(dir==='E'){back=[cx-240,cy-s2,cx-180,cy+s2];seat=[cx-180,cy-s2,cx+240,cy+s2]}else{back=[cx+180,cy-s2,cx+240,cy+s2];seat=[cx-240,cy-s2,cx+180,cy+s2]}
+ P.push(B(seat[0],seat[1],seat[0]+40,seat[1]+40,0,430,DK),B(seat[2]-40,seat[1],seat[2],seat[1]+40,0,430,DK),B(seat[0],seat[3]-40,seat[0]+40,seat[3],0,430,DK),B(seat[2]-40,seat[3]-40,seat[2],seat[3],0,430,DK));
+ P.push(B(...seat,430,470,c),B(...back,0,900,c));return P};
+const tableTop=(u0,v0,u1,v1,c)=>[B(u0,v0,u1,v1,720,760,c),B(u0+30,v0+30,u0+90,v0+90,0,720,shade(c,.7)),B(u1-90,v0+30,u1-30,v0+90,0,720,shade(c,.7)),B(u0+30,v1-90,u0+90,v1-30,0,720,shade(c,.7)),B(u1-90,v1-90,u1-30,v1-30,0,720,shade(c,.7))];
+const dinP=(w,d,c)=>{const n=w>1500?3:2,cc=shade(c,.55),P=tableTop(0,500,w,d-500,c);for(let i=0;i<n;i++){const u=(i+.5)*w/n;P.push(...chairAt(u,250,'S',cc),...chairAt(u,d-250,'N',cc))}return P};
+const dinRP=(w,d,c)=>{const r=Math.min(w,d)/2-500,cc=shade(c,.55);return[Cy(w/2,d/2,r,r,720,760,c),Cy(w/2,d/2,70,70,0,720,shade(c,.6)),...chairAt(w/2,250,'S',cc),...chairAt(w/2,d-250,'N',cc),...chairAt(250,d/2,'E',cc),...chairAt(w-250,d/2,'W',cc)]};
+function kitchenGen(type,w,d,c,kt,ko){ko=ko||{H:2700,fr:'col',ov:'under',mw:'none',dw:60,dr:1,up:'v',uh:'720',hd:'wall',hn:'bar',sk:'1',bs:'#d9d4cc'};
+ const P=[],M=[],H=ko.H,bar=ko.hn==='bar',GP='#1f1f1f',HC='#9aa0a6',DKG='#1d1f22';
+ const vl=(u,z0,z1)=>P.push(B(u-2,600,u+2,604,z0,z1,GP)),hl=(u0,u1,z)=>P.push(B(u0+2,600,u1-2,604,z-2,z+2,GP));
+ const hd=(u,z,vert,vv=603)=>{if(bar)P.push(vert?B(u-7,vv,u+7,vv+25,z-90,z+90,HC):B(u-80,vv,u+80,vv+25,z-7,z+7,HC))};
+ const colTop=ko.uh==='ceil'?H:Math.min(H,1450+(+ko.uh||720));let u=0;
+ if(ko.fr==='col'){P.push(B(0,0,600,600,0,colTop,c));hl(0,600,860);vl(600,0,colTop);hd(560,1250,true);hd(560,620,true);M.push(['Колона за вграден хладилник 60 см',1],['Хладилник за вграждане',1]);u=600}
+ else if(ko.fr==='free'){P.push(B(10,0,600,650,0,1850,'#c9ccd0'),B(14,650,596,654,1100,1104,'#8a8f94'),B(550,654,566,680,700,1000,'#8a8f94'),B(550,654,566,680,1200,1500,'#8a8f94'));M.push(['Свободностоящ хладилник',1]);u=600}
+ if(ko.ov==='col'||ko.mw==='col'){P.push(B(u,0,u+600,600,0,colTop,c));if(ko.ov==='col'){P.push(B(u+30,600,u+570,606,820,1420,DKG));M.push(['Фурна за вграждане',1])}if(ko.mw==='col'){P.push(B(u+30,600,u+570,606,1470,1830,'#26292d'));M.push(['Микровълнова за вграждане',1])}
+  if(colTop>1900){hl(u,u+600,1880);hd(u+300,1950,false)}vl(u+600,0,colTop);M.push(['Колона за фурна / микровълнова 60 см',1]);u+=600}
+ const c0=u,fix=[];for(let i=0;i<ko.dr;i++)fix.push(['dr',500]);fix.push([ko.ov==='under'?'hobo':'hobd',600]);
+ const tail=[['sink',ko.sk==='2'?800:600]];if(ko.dw>0)tail.push(['dw',ko.dw*10]);if(ko.fr==='under')tail.push(['fru',600]);
+ const used=[...fix,...tail].reduce((a,m)=>a+m[1],0);let left=w-c0-used;
+ if(left<-1)ko.warn.push(`Кухнята е къса с ${fmt(-left/10,0)} см за избраните модули — удължи я или махни уред.`);
+ const nF=left>150?C(left/600):0,fwid=nF?left/nF:0,fa=[],fb=[];for(let i=0;i<nF;i++)(i<nF/2?fa:fb).push(['door',fwid]);
+ const seq=[...fix,...fa,...tail.slice(0,1+(ko.dw>0?1:0)),...fb,...tail.slice(1+(ko.dw>0?1:0))];
+ let x=c0;const pos=[];seq.forEach(([t,wd])=>{if(x+wd>w+1)return;pos.push([t,x,x+wd]);x+=wd});const runEnd=Math.min(w,x);
+ const NM={door:'Долен шкаф с врати',dr:'Долен модул с 3 чекмеджета',hobo:'Шкаф за вградена фурна (под котлона)',hobd:'Модул с чекмеджета под котлона',sink:'Шкаф за мивка',dw:'Съдомиялна за вграждане',fru:'Хладилник под плот'};
+ let hobX=null,sinkX=null;
+ pos.forEach(([t,u0,u1])=>{const wd=u1-u0,mid=(u0+u1)/2;P.push(B(u0,0,u1,550,0,100,DK),B(u0,0,u1,600,100,850,c));vl(u1,100,850);
+  M.push([`${NM[t]} ${fmt(wd/10,0)} см`,1]);
+  if(t==='door'||t==='sink'){if(wd>450){vl(mid,100,850);hd(mid-35,760,true);hd(mid+35,760,true)}else hd(u1-40,760,true)}
+  if(t==='dr'){hl(u0,u1,370);hl(u0,u1,610);hd(mid,780,false);hd(mid,520,false);hd(mid,260,false)}
+  if(t==='hobd'){hl(u0,u1,480);hd(mid,760,false);hd(mid,380,false)}
+  if(t==='hobo'){P.push(B(u0+30,600,u1-30,606,150,700,DKG));hl(u0,u1,720);hd(mid,780,false);hd(mid,660,false);M.push(['Фурна за вграждане',1])}
+  if(t==='dw'){P.push(B(u0+10,600,u1-10,604,812,838,'#55585c'));hd(mid,780,false);M.push([`Съдомиялна ${wd/10} см`,1])}
+  if(t==='fru'){hd(u1-40,760,true);M.push(['Хладилник за вграждане под плот',1])}
+  if(t==='hobo'||t==='hobd'){hobX=mid;P.push(Tp(mid-290,50,mid+290,560,891,'#141416'));[[-130,-110],[130,-110],[-130,110],[130,110]].forEach(([a,b2])=>P.push(Cy(mid+a,305+b2,80,80,892,893,'#303034')));M.push(['Плот за готвене (индукционен)',1])}
+  if(t==='sink'){sinkX=mid;const sw=ko.sk==='2'?720:480;P.push(Tp(mid-sw/2,90,mid+sw/2,500,891,'#9aa3a8'),B(mid-15,30,mid+15,80,890,1160,'#b8bcc0'),B(mid-15,80,mid+15,230,1130,1160,'#b8bcc0'));M.push([ko.sk==='2'?'Двойна мивка + смесител':'Мивка + смесител',1])}});
+ if(runEnd>c0){P.push(B(c0,0,runEnd,620,850,890,kt));M.push(['__plot',runEnd-c0],['__cokal',runEnd-c0])}
+ const runs=[];if(type!=='I')runs.push([w-600,600,w,d,'R']);if(type==='U')runs.push([0,600,600,d,'L']);
+ runs.forEach(([u0,v0,u1,v1,sd])=>{if(v1-v0<200)return;P.push(B(u0,v0,u1,v1,0,100,DK),B(u0,v0,u1,v1,100,850,c),B(u0,v0,u1,v1,850,890,kt));const fu=sd==='R'?u0-4:u1;
+  const n=Math.max(1,Math.round((v1-v0)/600));for(let i=1;i<=n;i++){const vv=v0+i*(v1-v0)/n;P.push(B(fu,vv-2,fu+4,vv+2,100,850,GP))}
+  M.push([`Долен шкаф с врати (страничен) ${fmt((v1-v0)/n/10,0)} см`,n],['__plot',v1-v0],['__cokal',v1-v0])});
+ if(type!=='I')M.push(['Ъглов модул / ъглов механизъм',type==='U'?2:1]);
+ const hb=ko.up!=='none'?1450:1450;if(runEnd>c0)P.push(B(c0,0,runEnd,8,890,hb,ko.bs)),M.push(['__gryb',(runEnd-c0)*(hb-890)/1e6]);
+ if(ko.up!=='none'&&colTop>1450){const uz0=1450,uz1=colTop;let ux=c0;const ups=[];
+  while(ux<runEnd-150){const wd=Math.min(600,runEnd-ux);ups.push([ux,ux+wd]);ux+=wd}
+  ups.forEach(([u0,u1],i)=>{const mid=(u0+u1)/2,overHob=hobX!==null&&hobX>u0&&hobX<u1;
+   if(overHob&&ko.hd==='wall'){P.push(B(mid-300,0,mid+300,500,1580,1640,'#b9bdc1'),B(mid-140,0,mid+140,260,1640,H,'#b9bdc1'));M.push(['Абсорбатор – стенен (комин)',1]);return}
+   let z0=uz0;if(overHob&&ko.hd==='built'){z0=1650;P.push(B(u0,0,u1,350,1600,1650,'#b9bdc1'));M.push(['Абсорбатор – вграден',1])}
+   const open=ko.up==='o'||(ko.up==='mix'&&i===ups.length-1);
+   if(open){P.push(B(u0,0,u1,18,z0,uz1,c),B(u0,0,u0+18,300,z0,uz1,c),B(u1-18,0,u1,300,z0,uz1,c));for(let z=z0;z<uz1-100;z+=Math.max(280,(uz1-z0)/3))P.push(B(u0,0,u1,300,z,z+20,c));M.push([`Отворен рафт ${fmt((u1-u0)/10,0)} см`,1]);return}
+   P.push(B(u0,0,u1,350,z0,uz1,c));const fr2=(a,b2,z)=>P.push(B(a,350,b2,354,z-2,z+2,GP)),vv=(uu,za,zb)=>P.push(B(uu-2,350,uu+2,354,za,zb,GP));vv(u1,z0,uz1);
+   if(ko.up==='h'||ko.up==='mix'){const n=uz1-z0>=800?2:1;for(let k=1;k<n;k++)fr2(u0,u1,z0+k*(uz1-z0)/n);for(let k=0;k<n;k++)hd(mid,z0+k*(uz1-z0)/n+40,false,353);M.push([`Горен шкаф – вдигаща се врата ${fmt((u1-u0)/10,0)} см`,1])}
+   else{if(u1-u0>450){vv(mid,z0,uz1);hd(mid-35,z0+110,true,353);hd(mid+35,z0+110,true,353)}else hd(u1-40,z0+110,true,353);M.push([`Горен шкаф – вертикални врати ${fmt((u1-u0)/10,0)} см`,1])}
+   if(ko.mw==='up'&&i===0){P.push(B(u0+40,350,u1-40,357,z0+60,z0+380,'#26292d'));M.push(['Микровълнова за вграждане',1])}})}
+ else if(ko.hd!=='none'&&hobX!==null){P.push(B(hobX-300,0,hobX+300,500,1580,1640,'#b9bdc1'),B(hobX-140,0,hobX+140,260,1640,H,'#b9bdc1'));M.push(['Абсорбатор – стенен (комин)',1])}
+ const fronts=M.filter(m=>/шкаф|модул|Колона/i.test(m[0])&&!/Ъглов/.test(m[0])).reduce((a,m)=>a+m[1],0);
+ if(bar)M.push(['__dr',fronts*1.6|0]);
+ P.mods=M;return P}
+const FURN={
+ sofa2:{g:'Хол',n:'Диван 2-местен',e:'2-seat sofa',w:160,d:90,c:'#6b7b8c',p:sofaP},
+ sofa3:{g:'Хол',n:'Диван 3-местен',e:'3-seat sofa',w:220,d:95,c:'#6b7b8c',p:sofaP},
+ sofaL:{g:'Хол',n:'Ъглов диван',e:'L-shaped corner sofa',w:270,d:170,c:'#7d7468',p:sofaLP},
+ arm:{g:'Хол',n:'Фотьойл',e:'armchair',w:85,d:85,c:'#b8a48c',p:sofaP},
+ ctab:{g:'Хол',n:'Холна маса',e:'coffee table',w:110,d:60,c:'#8a6a4c',p:(w,d,c)=>[B(0,0,w,d,380,420,c),B(50,50,w-50,d-50,0,380,shade(c,.7))]},
+ tv:{g:'Хол',n:'ТВ шкаф с телевизор',e:'TV unit with wall-mounted TV',w:180,d:40,c:'#3a3a3a',p:(w,d,c)=>{const t=Math.min(1200,w)/2;return[B(0,0,w,d,0,480,c),B(w/2-t,0,w/2+t,45,950,1640,'#15171a')]}},
+ shelf:{g:'Хол',n:'Етажерка / библиотека',e:'bookshelf',w:80,d:35,c:'#a88a66',p:(w,d,c)=>{const P=[B(0,0,w,d,0,1800,c)];for(let z=360;z<1800;z+=360)P.push(B(20,d-5,w-20,d,z-6,z,shade(c,.7)));return P}},
+ din4:{g:'Трапезария',n:'Маса с 4 стола',e:'dining table with 4 chairs',w:120,d:180,c:'#8a6a4c',p:dinP},
+ din6:{g:'Трапезария',n:'Маса с 6 стола',e:'dining table with 6 chairs',w:180,d:190,c:'#8a6a4c',p:dinP},
+ dinR:{g:'Трапезария',n:'Кръгла маса с 4 стола',e:'round dining table with 4 chairs',w:200,d:200,c:'#8a6a4c',p:dinRP},
+ chair:{g:'Трапезария',n:'Стол',e:'chair',w:45,d:50,c:'#4a4a4a',p:(w,d,c)=>chairAt(w/2,d/2+(d-480)/2,'S',c)},
+ bed2:{g:'Спалня',n:'Спалня двойна',e:'double bed',w:170,d:210,c:'#9c8f80',p:(w,d,c)=>{const P=[B(0,0,w,d,0,300,c),B(30,60,w-30,d-30,300,520,'#f4f2ee'),B(0,0,w,60,0,1100,shade(c,.9)),B(30,700,w-30,d-30,520,570,'#c9d3dc')];if(w>1200)P.push(B(90,110,w/2-30,450,520,640,'#ffffff'),B(w/2+30,110,w-90,450,520,640,'#ffffff'));else P.push(B(90,110,w-90,450,520,640,'#ffffff'));return P}},
+ bed1:{g:'Спалня',n:'Легло единично',e:'single bed',w:100,d:210,c:'#9c8f80',p:null},
+ night:{g:'Спалня',n:'Нощно шкафче',e:'bedside table',w:45,d:40,c:'#a88a66',p:(w,d,c)=>[B(0,0,w,d,0,550,c)]},
+ ward:{g:'Спалня',n:'Гардероб',e:'wardrobe',w:200,d:60,c:'#e8e4dc',p:(w,d,c)=>{const P=[B(0,0,w,d,0,2200,c)],n=Math.max(2,Math.round(w/500));for(let i=1;i<n;i++)P.push(B(i*w/n-3,d,i*w/n+3,d+4,60,2150,shade(c,.6)));return P}},
+ dress:{g:'Спалня',n:'Скрин',e:'chest of drawers',w:100,d:45,c:'#a88a66',p:(w,d,c)=>[B(0,0,w,d,0,850,c)]},
+ desk:{g:'Кабинет',n:'Бюро',e:'desk',w:120,d:60,c:'#a88a66',p:(w,d,c)=>[B(0,0,w,d,720,750,c),B(0,0,40,d,0,720,c),B(w-40,0,w,d,0,720,c)]},
+ ochair:{g:'Кабинет',n:'Офис стол',e:'office chair',w:60,d:60,c:'#333333',p:(w,d,c)=>[Cy(w/2,d/2,w*.35,d*.35,0,60,DK),B(w/2-25,d/2-25,w/2+25,d/2+25,60,430,DK),B(0,100,w,d,430,500,c),B(30,0,w-30,100,450,1050,c)]},
+ kI:{g:'Кухня',n:'Кухня права',e:'straight kitchen',w:300,d:60,c:'#e9e5df',p:(w,d,c,kt,ko)=>kitchenGen('I',w,d,c,kt,ko),k:'I'},
+ kL:{g:'Кухня',n:'Кухня Г-образна',e:'L-shaped kitchen',w:300,d:220,c:'#e9e5df',p:(w,d,c,kt,ko)=>kitchenGen('L',w,d,c,kt,ko),k:'L'},
+ kU:{g:'Кухня',n:'Кухня П-образна',e:'U-shaped kitchen',w:300,d:240,c:'#e9e5df',p:(w,d,c,kt,ko)=>kitchenGen('U',w,d,c,kt,ko),k:'U'},
+ island:{g:'Кухня',n:'Кухненски остров',e:'kitchen island',w:180,d:90,c:'#e9e5df',p:(w,d,c,kt)=>[B(0,0,w,d,0,100,DK),B(0,0,w,d,100,880,c),B(-20,-20,w+20,d+20,880,920,kt)]},
+ bar:{g:'Кухня',n:'Бар стол',e:'bar stool',w:40,d:40,c:'#333333',p:(w,d,c)=>[Cy(w/2,d/2,w*.45,d*.45,0,20,DK),B(w/2-15,d/2-15,w/2+15,d/2+15,20,700,DK),Cy(w/2,d/2,w*.5,d*.5,700,760,c)]},
+ rug:{g:'Декор',n:'Килим',e:'rug',w:240,d:170,c:'#d8cfc0',p:(w,d,c)=>[B(0,0,w,d,0,10,c)]},
+ plant:{g:'Декор',n:'Растение',e:'large potted plant',w:45,d:45,c:'#5f8a5a',p:(w,d,c)=>[Cy(w/2,d/2,w*.32,d*.32,0,400,'#b5a58f'),Cy(w/2,d/2,w*.6,d*.6,400,1250,c)]},
+ lamp:{g:'Декор',n:'Лампион',e:'floor lamp',w:40,d:40,c:'#d9c9a3',p:(w,d,c)=>[Cy(w/2,d/2,w*.4,d*.4,0,25,'#555555'),B(w/2-12,d/2-12,w/2+12,d/2+12,25,1500,'#555555'),Cy(w/2,d/2,w*.5,d*.5,1450,1750,c)]}};
+FURN.bed1.p=FURN.bed2.p;
+const PNL={lam:{n:'Ламели (рифлени панели)',e:'wooden slat acoustic wall panels',pw:600,ph:2700},'3d':{n:'3D стенни панели',e:'3D textured wall panels',pw:500,ph:500},boa:{n:'Боазери (декоративни лайсни)',e:'classic boiserie wall mouldings',pw:0,ph:0},pvc:{n:'PVC панели с мраморен вид',e:'large marble-look wall panels',pw:1220,ph:2440}};
+if(!st.furn)st.furn=[{t:'sofa3',wall:'3',x:1.0,g:0,rot:0,w:220,d:95,c:'#6b7b8c'},{t:'rug',wall:'f',x:1.0,g:1.6,rot:0,w:220,d:160,c:'#d8cfc0'},{t:'ctab',wall:'f',x:1.55,g:2.25,rot:0,w:110,d:60,c:'#8a6a4c'},{t:'tv',wall:'1',x:1.2,g:0,rot:0,w:180,d:40,c:'#3a3a3a'},{t:'arm',wall:'4',x:1.7,g:0,rot:0,w:85,d:85,c:'#b8a48c'},{t:'plant',wall:'3',x:0.15,g:0,rot:0,w:45,d:45,c:'#5f8a5a'},{t:'kI',wall:'2',x:0.5,g:0,rot:0,w:300,d:60,c:'#e9e5df'},{t:'din4',wall:'f',x:3.7,g:1.4,rot:0,w:120,d:180,c:'#8a6a4c'}];
+if(!st.pnl)st.pnl=[{t:'lam',wall:'1',x:0.9,w:2.4,z:0,h:2.7,c:'#8a6a4c'}];
+function renderFurn(){const opt=sel=>{let g='',o='';Object.entries(FURN).forEach(([k,f])=>{if(f.g!==g){if(g)o+='</optgroup>';g=f.g;o+=`<optgroup label="${g}">`}o+=`<option value="${k}"${sel===k?' selected':''}>${f.n}</option>`});return o+'</optgroup>'};
+ $('#U-f').innerHTML=st.furn.map((o,i)=>{const fr2=o.wall==='f';return`<div class="ob"><div class="top"><select data-fu="${i}|t" aria-label="Мебел">${opt(o.t)}</select><button type="button" data-delfu="${i}">Премахни</button></div>
+ <label>Място<select data-fu="${i}|wall">${[['1','До стена 1'],['2','До стена 2'],['3','До стена 3'],['4','До стена 4'],['f','Свободно']].map(([v2,l])=>`<option value="${v2}"${o.wall===v2?' selected':''}>${l}</option>`).join('')}</select></label>
+ <label>${fr2?'Завъртане':'Цвят'}${fr2?`<select data-fu="${i}|rot">${[0,90,180,270].map(r=>`<option value="${r}"${+o.rot===r?' selected':''}>${r}°</option>`).join('')}</select>`:`<input type="color" value="${o.c}" data-fu="${i}|c">`}</label>
+ ${[['x',fr2?'X (от стена 4), м':'По стената, м',0.01],['g',fr2?'Y (от стена 1), м':'От стената, м',0.01],['w','Ширина, см',1],['d','Дълбочина, см',1]].map(([k,l,s2])=>`<label>${l}<input type="number" inputmode="decimal" min="0" step="${s2}" value="${o[k]}" data-fu="${i}|${k}"></label>`).join('')}
+ ${fr2?`<label>Цвят<input type="color" value="${o.c}" data-fu="${i}|c"></label>`:''}</div>`}).join('')||'<span class="small">Няма добавени мебели.</span>'}
+function renderPnl(){$('#N2-f').innerHTML=st.pnl.map((o,i)=>`<div class="ob"><div class="top"><select data-pn="${i}|t" aria-label="Панел">${Object.entries(PNL).map(([k,x])=>`<option value="${k}"${o.t===k?' selected':''}>${x.n}</option>`).join('')}</select><button type="button" data-delpn="${i}">Премахни</button></div>
+ <label>На стена<select data-pn="${i}|wall">${[1,2,3,4].map(n=>`<option value="${n}"${+o.wall===n?' selected':''}>Стена ${n}</option>`).join('')}</select></label><label>Цвят<input type="color" value="${o.c}" data-pn="${i}|c"></label>
+ ${[['x','От левия ъгъл, м'],['w','Ширина, м'],['z','От пода, м'],['h','Височина, м']].map(([k,l])=>`<label>${l}<input type="number" inputmode="decimal" min="0" step="0.01" value="${o[k]}" data-pn="${i}|${k}"></label>`).join('')}</div>`).join('')||'<span class="small">Няма добавени панели.</span>'}
+/* ---------- мебели, заредени от „Разкрой и Кантиране“ (само за плана и рендера) ---------- */
+function rkLoad(txt){let d;try{d=JSON.parse(txt)}catch(e){return 'Това не е проект от „Разкрой“ (файлът не е JSON).'}
+ const mods=(d&&Array.isArray(d.modules)?d.modules:[]).filter(m=>m&&m.type!=='single'&&+m.w>0&&+m.h>0);if(!mods.length)return 'В проекта няма шкафове (модули).';
+ const ms=d.modSettings||{},mb=ms.boards||{},bd=Array.isArray(d.boards)?d.boards:[],hx=id=>{const b=id&&bd.find(x=>x.id===id);return b&&/^#[0-9a-f]{6}$/i.test(b.hex||'')?b.hex:''};
+ const ids=[...new Set(mods.map(m=>m.wallId||'A'))],old=(st.rk&&st.rk.walls)||[];
+ st.rk={name:d.name||'Проект от „Разкрой“',set:{t:+ms.carcassThick||18,pl:ms.plinth!=null?+ms.plinth:100,wt:ms.worktop!==false,wtt:+ms.worktopThick||38,wtd:+ms.worktopDepth||600,gap:ms.rowGap!=null?+ms.rowGap:600},
+  bc:hx(mb.carcass)||'#efece6',fc:hx(mb.face)||'#d9d4cc',kt:hx(mb.worktop),
+  mods:mods.map(m=>({n:m.name||'Модул',type:m.type,w:+m.w,h:+m.h,d:+m.d||(m.type==='wall'?320:m.type==='base'?560:580),front:m.front||'none',fc:+m.frontCount||1,sh:+m.shelves||0,dv:+m.dividers||0,rail:m.rail||'none',count:Math.max(1,Math.round(+m.count||1)),preset:m.preset||'',hood:!!m.hood,face:hx(m.faceBoard),wall:m.wallId||'A'})),
+  walls:ids.map((id,i)=>{const w=(Array.isArray(d.walls)?d.walls:[]).find(x=>x.id===id)||{},o=old.find(x=>x.id===id);return{id,len:+w.wall||0,tall:['left','ends'].includes(w.tallPos)?w.tallPos:'right',up:['right','center'].includes(w.upperAlign)?w.upperAlign:'left',room:o?o.room:String(i%4+1),x:o?o.x:0}})};
+ return ''}
+function rkRow(m){const r={n:m.n,w:m.w,h:m.h,d:m.d,row:m.type==='base'?'low':m.type==='wall'?'up':'tall',doors:'none',dr:0,sh:m.sh,dv:m.dv,rail:{first:'1',all:'all'}[m.rail]||'0',app:'',pos:'r',fcol:m.face,hood:m.hood};
+ const f=m.front,n=m.fc;
+ if(f==='dwPanel')r.app='dw';else if(f==='oven')r.app='oven';
+ else if(f==='hinged'||f==='cornerBlind')r.doors=n>=2&&f==='hinged'?'2':'l';
+ else if(f==='sliding')r.doors='slide';else if(f==='lift')r.doors='lift';
+ else if(f==='drawers')r.dr=n;else if(f==='combo'){r.dr=n;r.doors=m.w>600?'2':'l'}
+ if(m.preset==='sink')r.app='sink';return r}
+function rkItems(L,W,H,kt,warn){const R=st.rk;if(!R)return[];const S=R.set,out=[];
+ R.walls.forEach(W0=>{const ms=[];R.mods.filter(m=>m.wall===W0.id).forEach(m=>{for(let i=0;i<m.count;i++)ms.push(rkRow(m))});if(!ms.length)return;
+  const tall=ms.filter(r=>r.row==='tall'),low=ms.filter(r=>r.row==='low'),up=ms.filter(r=>r.row==='up'),sum=a=>a.reduce((q,r)=>q+r.w,0);
+  const lT=tall.filter((r,i)=>W0.tall==='left'||(W0.tall==='ends'&&i%2===0)),rT=tall.filter(r=>!lT.includes(r)),lw=sum(low),uw=sum(up),ls=sum(lT);
+  const baseH=low.length?Math.max(...low.map(r=>r.h)):720,wt=S.wt&&low.length?S.wtt:0,anr=!low.length&&tall.length;
+  const runW=anr?sum(tall):Math.max(lw,uw),al=(st0,w0,ww)=>W0.up==='right'?st0+w0-ww:W0.up==='center'?st0+(w0-ww)/2:st0;
+  const upz=anr?S.pl+Math.max(...tall.map(r=>r.h)):S.pl+baseH+wt+S.gap,us=anr?al(0,runW,uw):al(ls,lw||uw,uw);
+  let c=0;lT.forEach(r=>{r.x=c;r.z=S.pl;c+=r.w});c=ls+(anr?0:runW);rT.forEach(r=>{r.x=c;r.z=S.pl;c+=r.w});c=ls;low.forEach(r=>{r.x=c;r.z=S.pl;c+=r.w});c=us;up.forEach(r=>{r.x=c;r.z=upz;c+=r.w});
+  const len=Math.max(W0.len,...ms.map(r=>r.x+r.w)),dep=Math.max(...ms.map(r=>r.d+40),wt?S.wtd:0),parts=[],hw={};
+  const B=(u0,v0,u1,v1,z0,z1,c2)=>parts.push({u0,v0,u1,v1,z0,z1,c:c2}),ktc=R.kt||kt;
+  ms.forEach((r,i)=>{r.i=i;const fc=r.fcol||R.fc,G={t:S.t,pl:S.pl,proj:S.wt?'k':'w',fm:'pdch',hn:true,bc:R.bc,fc,kt:ktc},b=buildMod(r,G);
+   b.HW.forEach(([n2,q])=>{if(/Хладилник|Фурна|Съдомиялна|котлон|Мивка|Абсорбатор/.test(n2))hw[n2]=(hw[n2]||0)+q});
+   b.P.forEach(p=>{if(p.x1-p.x0<.5||p.y1-p.y0<.5||p.z1-p.z0<.5)return;B(r.x+p.x0,p.y0,r.x+p.x1,p.y1,r.z+p.z0,r.z+p.z1,p.mat==='front'?fc:p.mat==='back'?shade(R.bc,.9):R.bc)});
+   if(b.I.oven)B(r.x+30,r.d+2,r.x+r.w-30,r.d+22,r.z+b.I.oven[0]+20,r.z+b.I.oven[1]-20,'#1d1f22');
+   b.Fr.forEach(f=>{if(f.k==='slide'||f.plain)return;const hx=f.k==='door'&&f.hinge==='l'?f.x1-40:f.k==='door'&&f.hinge==='r'?f.x0+40:(f.x0+f.x1)/2,hz=f.k==='drawer'||f.k==='lift'?f.z1-50:r.row==='up'?f.z0+90:f.z1-110;
+    if(f.k==='drawer'||f.k==='lift')B(r.x+hx-80,r.d+18,r.x+hx+80,r.d+40,r.z+hz-7,r.z+hz+7,'#9aa0a6');else B(r.x+hx-7,r.d+18,r.x+hx+7,r.d+40,r.z+hz-80,r.z+hz+80,'#9aa0a6')});
+   if(r.row!=='up'&&S.pl>0)B(r.x+20,40,r.x+r.w-20,r.d-50,0,S.pl,'#2b2b2b');
+   if(r.hood){hw['Абсорбатор']=(hw['Абсорбатор']||0)+1;B(r.x+r.w/2-140,0,r.x+r.w/2+140,260,r.z+r.h,H,'#b9bdc1')}
+   if(r.app==='sink'&&wt)B(r.x+r.w/2-230,90,r.x+r.w/2+230,500,r.z+r.h+wt,r.z+r.h+wt+2,'#9aa3a8'),B(r.x+r.w/2-15,30,r.x+r.w/2+15,80,r.z+r.h+wt,r.z+r.h+wt+280,'#b8bcc0')});
+  if(wt)B(ls,0,ls+lw,S.wtd,S.pl+baseH,S.pl+baseH+wt,ktc);
+  const n=+W0.room,off=(+W0.x||0)*1000,P=placer(n,off,0,len,dep,L,W,0),a=P.pt(0,0),e=P.pt(len,dep),bb=[Math.min(a[0],e[0]),Math.min(a[1],e[1]),Math.max(a[0],e[0]),Math.max(a[1],e[1])];
+  if(off+len>(n%2?L:W)+5)warn.push(`Мебелите от „Разкрой“ (стена ${W0.id}) са ${fmt(len/1000,2)} м и излизат извън стена ${n}.`);
+  if(Math.max(...ms.map(r=>r.z+r.h))>H+5)warn.push(`Мебелите от „Разкрой“ (стена ${W0.id}) са по-високи от тавана.`);
+  out.push({W0,n,len,P,bb,parts,ms,hw,wtLen:wt?lw:0})});
+ return out}
+function renderRK(){const el=$('#RK-f');if(!el)return;const R=st.rk,fileBtn=t=>`<label class="add rkfile">${t}<input type="file" accept=".json,application/json" data-rkfile="1" hidden></label>`;
+ el.innerHTML=R?`<div class="ob"><div class="top"><b style="flex:1;color:var(--ink)">${R.name.replace(/[<&>"]/g,'')}</b><button type="button" data-rkdel="1">Премахни</button></div>
+  <span style="grid-column:1/-1">${R.mods.reduce((a,m)=>a+m.count,0)} модула. Промените по шкафовете се правят в „Разкрой“, после се зареждат наново.</span>
+  ${R.walls.map((w,i)=>`<label>Стена „${w.id}“ от „Разкрой“ отива на<select data-rk="${i}|room">${[1,2,3,4].map(n=>`<option value="${n}"${+w.room===n?' selected':''}>Стена ${n}</option>`).join('')}</select></label><label>От левия ъгъл, м<input type="number" inputmode="decimal" min="0" step="0.01" value="${w.x}" data-rk="${i}|x"></label>`).join('')}</div>${fileBtn('Зареди наново / друг проект')}`
+ :`<p class="small">В „Разкрой и Кантиране“ натисни „Копирай проекта“ (или „Запази файл“) и го постави или зареди тук. Шкафовете ще се появят в плана и в рендерите на стаята.</p>${fileBtn('Зареди файл от „Разкрой“')}
+  <textarea id="rkPaste" rows="3" placeholder="…или постави копирания текст тук" style="width:100%;font:inherit;font-size:14px;border:1px solid var(--ln);border-radius:5px;padding:6px;background:var(--bg);color:var(--ink)"></textarea><button type="button" class="add" data-rkpaste="1">Зареди поставения текст</button>`;
+ el.insertAdjacentHTML('beforeend','<p class="small" id="rkMsg" role="status"></p>')}
+function rkApply(txt){const e=rkLoad(txt);if(e){const m=$('#rkMsg');if(m)m.textContent=e;return}save();renderRK();run('f')}
+document.addEventListener('change',e=>{const el=e.target;if(!el.dataset||!el.dataset.rkfile||!el.files||!el.files[0])return;el.files[0].text().then(rkApply)});
+function boaFrames(x0,w,z0,h){const n=Math.max(1,Math.round(w/800)),m=100,fw=(w-(n+1)*m)/n,fr=[];for(let i=0;i<n;i++){const a=x0+m+i*(fw+m);if(h>1500){fr.push([a,z0+m,a+fw,z0+Math.min(900,h*.36)]);fr.push([a,z0+Math.min(900,h*.36)+2*m,a+fw,z0+h-m])}else fr.push([a,z0+m,a+fw,z0+h-m])}return fr}
+/* ---------- МЕБЕЛИ ПО ПОРЪЧКА ---------- */
+const MT=(n,row,w,h,d,doors,dr,sh,dv,rail,app)=>({n,row,w,h,d,doors,dr,sh,dv,rail:rail||'0',app:app||''});
+function buildMod(r,G){const t=G.t,W=r.w,H=r.h,D=r.d,P=[],HW=[],Fr=[],I={rails:[],drawers:[],oven:null};const app=r.app||'';
+ const pn=(n,mat,x0,x1,y0,y1,z0,z1,a,b,ea,eb)=>{if(a<1||b<1)return;if(a<b){[a,b]=[b,a];[ea,eb]=[eb,ea]}P.push({n,mat,x0,x1,y0,y1,z0,z1,cut:[Math.round(a),Math.round(b)],ed:[ea,eb],mi:r.i})};
+ const hw=(n,q)=>q&&HW.push([n,q]);
+ const front=(n,x0,x1,z0,z1,k,o={})=>{Fr.push({x0,x1,z0,z1,k,...o});pn(n,'front',x0,x1,D,D+t,z0,z1,z1-z0,x1-x0,G.fm==='pdch'?2:0,G.fm==='pdch'?2:0)};
+ if(app==='dw'){front('Фронт за съдомиялна',1.5,W-1.5,1.5,H-1.5,'door',{plain:1});hw('Съдомиялна за вграждане 60 см',1);if(G.hn)hw('Дръжки',1);return{P,HW,Fr,I}}
+ if(app==='hood'){hw('Абсорбатор',1);return{P,HW,Fr,I,hood:1}}
+ if(app==='desk'){pn('Плот на бюро','body',0,W,0,D,H-t,H,W,D,2,2);pn('Страница','body',0,t,0,D,0,H-t,H-t,D,1,0);pn('Страница','body',W-t,W,0,D,0,H-t,H-t,D,1,0);pn('Царга (гръб)','body',t,W-t,0,t,H-t-400,H-t,W-2*t,400,1,0);hw('Конфирмати',12);return{P,HW,Fr,I}}
+ pn('Страница','body',0,t,0,D,0,H,H,D,1,0);pn('Страница','body',W-t,W,0,D,0,H,H,D,1,0);pn('Дъно','body',t,W-t,3,D,0,t,W-2*t,D-3,1,0);
+ if(r.row==='low'&&G.proj==='k'&&app!=='hob'){pn('Бленда предна','body',t,W-t,D-100,D,H-t,H,W-2*t,100,1,0);pn('Бленда задна','body',t,W-t,3,103,H-t,H,W-2*t,100,0,0)}
+ else if(r.row==='low'&&G.proj==='k'){pn('Бленда предна','body',t,W-t,D-100,D,H-t,H,W-2*t,100,1,0);pn('Бленда задна','body',t,W-t,3,103,H-t,H,W-2*t,100,0,0)}
+ else pn('Таван','body',t,W-t,3,D,H-t,H,W-2*t,D-3,1,0);
+ pn('Гръб','back',1,W-1,0,3,1,H-1,W-4,H-4,0,0);
+ const iw=W-2*t,zt=H-t;let nd=Math.max(0,Math.round(+r.dr||0)),dz=0;
+ if(app==='oven'){nd=1;dz=170}else if(nd>0)dz=(r.doors==='none')?H:Math.min(H*.55,nd*200+t);
+ if(nd>0){const fh=dz/nd,bl=Math.max(250,Math.floor((D-50)/50)*50);for(let i=0;i<nd;i++){const z0=i*fh,bh=Math.max(70,fh-75);front('Фронт чекмедже',1.5,W-1.5,z0+1.5,z0+fh-1.5,'drawer');
+   const bw=iw-26;pn('Чекмедже страница','body',t+13,t+13+t,0,0,0,0,bl,bh,1,0);pn('Чекмедже страница','body',0,0,0,0,0,0,bl,bh,1,0);pn('Чекмедже чело/гръб','body',0,0,0,0,0,0,bw-2*t,bh,1,0);pn('Чекмедже чело/гръб','body',0,0,0,0,0,0,bw-2*t,bh,0,0);pn('Чекмедже дъно','back',0,0,0,0,0,0,bw,bl,0,0);
+   I.drawers.push([t+13,W-t-13,z0+(i?t/2:t)+10,z0+fh-20]);hw(`Водачи за чекмедже ${bl} мм (чифт)`,1)}
+  if(dz<H)pn('Рафт фиксиран','body',t,W-t,3,D-20,dz-t,dz,iw,D-23,1,0)}
+ const zs=nd>0?dz:t,ze=zt;
+ if(app==='oven'){I.oven=[dz,zt];hw('Фурна за вграждане',1)}
+ else{const k=Math.max(1,Math.round(+r.dv||0)+1),sw=(iw-(k-1)*t)/k;I.secs=[];
+  for(let s2=0;s2<k;s2++){const xs=t+s2*(sw+t);I.secs.push([xs,xs+sw]);if(s2>0)pn('Делител','body',xs-t,xs,3,D-20,zs,ze,ze-zs,D-23,1,0);
+   const rl=r.rail==='all'||(r.rail==='1'&&s2===0);
+   if(rl&&ze-zs>900){const zh=ze-330;pn('Рафт','body',xs+1,xs+sw-1,3,D-20,zh-t,zh,sw-2,D-23,1,0);I.rails.push([xs,xs+sw,zh-70]);hw(`Лост за дрехи ${Math.round(sw-10)} мм`,1);hw('Държач за лост',2);hw('Рафтоносачи',4)}
+   else{const n=Math.max(0,Math.round(+r.sh||0));for(let i=1;i<=n;i++){const z=zs+i*(ze-zs)/(n+1);pn('Рафт','body',xs+1,xs+sw-1,3,D-20,z-t/2,z+t/2,sw-2,D-23,1,0);hw('Рафтоносачи',4)}}}}
+ const zf=nd>0?dz:0,hg=h2=>h2<=900?2:h2<=1600?3:4;
+ if(app!=='oven'&&zf<H-50){const dt=r.doors;
+  if(dt==='l'||dt==='r'){front('Врата',1.5,W-1.5,zf+1.5,H-1.5,'door',{hinge:dt});hw('Панти',hg(H-zf))}
+  else if(dt==='2'){front('Врата',1.5,W/2-1.5,zf+1.5,H-1.5,'door',{hinge:'l'});front('Врата',W/2+1.5,W-1.5,zf+1.5,H-1.5,'door',{hinge:'r'});hw('Панти',2*hg(H-zf))}
+  else if(dt==='st'){const zs2=zf+(H-zf)*.6;front('Врата',1.5,W-1.5,zf+1.5,zs2-1.5,'door',{hinge:'r'});front('Врата',1.5,W-1.5,zs2+1.5,H-1.5,'door',{hinge:'r'});hw('Панти',hg(zs2-zf)+hg(H-zs2))}
+  else if(dt==='lift'){const n=H-zf>800?2:1,fh=(H-zf)/n;for(let i=0;i<n;i++)front('Вдигаща врата',1.5,W-1.5,zf+i*fh+1.5,zf+(i+1)*fh-1.5,'lift');hw('Механизъм за вдигаща врата',n);hw('Панти',2*n)}
+  else if(dt==='slide'){front('Плъзгаща врата',0,W/2+15,zf+20,H-10,'slide',{y:12});front('Плъзгаща врата',W/2-15,W,zf+20,H-10,'slide',{y:40});hw(`Система за плъзгащи врати ${Math.round(W)} мм (к-т)`,1)}}
+ if(app==='fridge')hw('Хладилник за вграждане',1);if(app==='hob')hw('Плот за готвене (котлон)',1);if(app==='sink')hw('Мивка + смесител',1);
+ if(G.hn)hw('Дръжки',Fr.filter(f=>f.k!=='slide').length);
+ if(r.row!=='up'&&r.pos!=='a'&&G.pl>0)hw('Крачета за цокъл',4);
+ hw('Конфирмати',8+4*Math.max(0,Math.round(+r.dv||0))+(nd&&dz<H?4:0)+nd*8);
+ return{P,HW,Fr,I}}
+function nest(items,SW,SH,kerf,rot){const sheets=[];const its=items.map(p=>{let a=p.a,b=p.b;if(rot&&b>a)[a,b]=[b,a];return{...p,a,b}}).sort((x,y)=>y.b-x.b||y.a-x.a);
+ its.forEach(it=>{let done=false;const tryPut=(sh,a,b)=>{for(const rw of sh.rows)if(b<=rw.h&&rw.x+a<=SW){sh.pl.push({...it,x:rw.x,y:rw.y,a,b});rw.x+=a+kerf;return true}
+   if(sh.y+b<=SH&&a<=SW){const rw={y:sh.y,h:b,x:a+kerf};sh.rows.push(rw);sh.pl.push({...it,x:0,y:sh.y,a,b});sh.y+=b+kerf;return true}return false};
+  for(const sh of sheets){if(tryPut(sh,it.a,it.b)||(rot&&tryPut(sh,it.b,it.a))){done=true;break}}
+  if(!done){const sh={rows:[],pl:[],y:0};sheets.push(sh);if(!tryPut(sh,it.a,it.b))tryPut(sh,it.b,it.a)}});
+ return sheets}
+for(const t in FIELDS){
+ $('#F-'+t).innerHTML=FIELDS[t].map(o=>o.rk?`<div class="obs" id="RK-f"></div>`:o.btn?`<button type="button" class="add" data-syncp="1">${o.l}</button>`:o.wallc?`<div class="obs" id="WC-b" data-m="bPer:1"></div>`:o.furn?`<div class="obs" id="U-f"></div><button type="button" class="add" data-addfu="1">+ Добави мебел</button>`:o.pnl?`<div class="obs" id="N2-f"></div><button type="button" class="add" data-addpn="1">+ Добави панел</button>`:o.fix?`<div class="obs" id="X-b"></div><button type="button" class="add" data-addfix="b">+ Добави санитария</button>`:o.obs?`<div class="obs" id="O-${o.obs}"></div><button type="button" class="add" data-add="${o.obs}">+ Добави колона / комин</button>`:o.h?`<h3 data-m="${o.m||''}">${o.h}</h3>`:`<label class="fl" data-m="${o.m||''}"><span>${o.l}</span>${o.o?`<select id="${o.id}">${o.o.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select>`:o.c?`<input type="color" id="${o.id}">`:`<span class="in"><input id="${o.id}" type="number" inputmode="decimal" min="0" step="${o.s||0.01}"><em>${o.u}</em></span>`}</label>`).join('');
+ FIELDS[t].forEach(o=>{if(!o.id)return;const el=$('#'+o.id);el.value=st[o.id]??(o.o?(o.v??o.o[0][0]):o.c||o.v);if(o.o&&!el.value)el.value=o.o[0][0]});
+ if(t==='p'||t==='b')renderObs(t);if(t==='b'){renderFix();renderWC()}if(t==='f'){renderFurn();renderPnl();renderRK()}
+ $('#F-'+t).addEventListener('input',e=>{const el=e.target;
+  if(el.dataset.rkfile||el.id==='rkPaste')return;
+  if(el.dataset.rk){const[i,k]=el.dataset.rk.split('|');st.rk.walls[+i][k]=el.value;save();run('f');return}
+  if(el.dataset.wc){const[n,k]=el.dataset.wc.split('|');st.bw[+n-1][k]=el.value;if(k==='hz'||k==='bn')renderWC();save();run('b');return}
+  if(el.dataset.fu){const[i,k]=el.dataset.fu.split('|'),o=st.furn[+i];o[k]=el.value;if(k==='t'){const D=FURN[o.t];o.w=D.w;o.d=D.d;o.c=D.c}if(k==='t'||k==='wall')renderFurn();save();run('f');return}
+  if(el.dataset.pn){const[i,k]=el.dataset.pn.split('|');st.pnl[+i][k]=el.value;save();run('f');return}
+  if(el.dataset.f){const[i,k]=el.dataset.f.split('|'),o=st.fixb[+i];o[k]=el.value;if(k==='t'){o.w=FX[o.t].w;o.d=FX[o.t].d;renderFix()}save();run('b');return}
+  if(el.dataset.o){const[tt,i,k]=el.dataset.o.split('|');st['obs'+tt][+i][k]=el.value;save();run(tt);return}
+  const id=el.id;if(!id)return;st[id]=el.value;
+  if(id==='pPat'){const w={n:7,f:7,r:7,d:12,hb:15}[el.value];$('#pWaste').value=w;st.pWaste=w}
+  if(id==='bFlay'){const w=el.value[0]==='d'?15:10;$('#bWaste').value=w;st.bWaste=w}
+  if(id==='dMode')st.dView='k';
+  if(id==='bPal'&&PAL[el.value])for(const k in PAL[el.value])if(k!=='n'){$('#'+k).value=PAL[el.value][k];st[k]=PAL[el.value][k]}
+  if(/^c[WFG]/.test(id)){$('#bPal').value='x';st.bPal='x'}
+  save();run(t)});
+ $('#F-'+t).addEventListener('submit',e=>e.preventDefault());
+}
+if(!st.bPal){for(const k in PAL.gw)if(k!=='n')$('#'+k).value=PAL.gw[k]}
+document.addEventListener('click',e=>{const a=e.target.dataset;
+ if(a.syncp){$('#fL').value=$('#pL').value;$('#fW').value=$('#pW').value;$('#fFloor').value='parq';st.fL=$('#fL').value;st.fW=$('#fW').value;st.fFloor='parq';save();run('f')}
+ if(a.rkdel){st.rk=null;save();renderRK();run('f')}
+ if(a.rkpaste){rkApply($('#rkPaste').value)}
+ if(a.addfu){st.furn.push({t:'chair',wall:'f',x:1,g:1,rot:0,w:45,d:50,c:'#4a4a4a'});save();renderFurn();run('f')}
+ if(a.delfu!==undefined){st.furn.splice(+a.delfu,1);save();renderFurn();run('f')}
+ if(a.addpn){st.pnl.push({t:'3d',wall:'2',x:0.5,w:1.5,z:0,h:2.7,c:'#e8e4dc'});save();renderPnl();run('f')}
+ if(a.delpn!==undefined){st.pnl.splice(+a.delpn,1);save();renderPnl();run('f')}
+ if(a.addfix){st.fixb.push({t:'m',wall:'1',x:0,w:60,d:45});save();renderFix();run('b')}
+ if(a.delfix!==undefined){st.fixb.splice(+a.delfix,1);save();renderFix();run('b')}
+ if(a.add){st['obs'+a.add].push({t:'c',w:40,d:40,x:0,y:0});save();renderObs(a.add);run(a.add)}
+ if(a.del){const[t,i]=a.del.split('|');st['obs'+t].splice(+i,1);save();renderObs(t);run(t)}
+ if(a.view){st.dView=a.view;save();run('d')}});
+
+/* svg helpers (px) */
+const f1=x=>x.toFixed(1);
+const R=(x,y,w,h,c,sty)=>w>0.05&&h>0.05?`<rect x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" class="${c}"${sty?` style="${sty}"`:''}/>`:'';
+const Ln=(a,b,c,d,k,ex='')=>`<line x1="${f1(a)}" y1="${f1(b)}" x2="${f1(c)}" y2="${f1(d)}" class="${k}"${ex}/>`;
+const T=(x,y,t,k='dl',a='middle',rot)=>`<text x="${f1(x)}" y="${f1(y)}" class="${k}" text-anchor="${a}"${rot?` transform="rotate(-90 ${f1(x)} ${f1(y)})"`:''}>${t}</text>`;
+const dH=(x1,x2,y,t)=>Ln(x1,y,x2,y,'dim')+Ln(x1,y-5,x1,y+5,'dim')+Ln(x2,y-5,x2,y+5,'dim')+T((x1+x2)/2,y-6,t);
+const dV=(x,y1,y2,t)=>Ln(x,y1,x,y2,'dim')+Ln(x-5,y1,x+5,y1,'dim')+Ln(x-5,y2,x+5,y2,'dim')+T(x-6,(y1+y2)/2,t,'dl','middle',1);
+const Cc=(x,y,r,k)=>`<circle cx="${f1(x)}" cy="${f1(y)}" r="${r}" class="${k}"/>`;
+function chainH(f,ticks,y){let b=Ln(f.X(ticks[0]),y,f.X(ticks[ticks.length-1]),y,'dim');ticks.forEach((x,i)=>{b+=Ln(f.X(x),y-5,f.X(x),y+5,'dim');if(i){const g=x-ticks[i-1];if(g*f.k>26)b+=T(f.X((x+ticks[i-1])/2),y-5,fmt(g/10,0))}});return b}
+function chainV(f,ticks,x){let b=Ln(x,f.Y(ticks[0]),x,f.Y(ticks[ticks.length-1]),'dim');ticks.forEach((y,i)=>{b+=Ln(x-5,f.Y(y),x+5,f.Y(y),'dim');if(i){const g=y-ticks[i-1];if(g*f.k>26)b+=T(x+14,f.Y((y+ticks[i-1])/2),fmt(g/10,0),'dl','middle',1)}});return b}
+function frame(fig,Lm,Hm,maxH,o={}){const bt=o.b??14,rt=o.r??14,cw=fig.clientWidth||640;const k=Math.min((cw-48-rt)/Lm,maxH/Hm);const H=Hm*k+38+bt;fig.style.height=H+'px';return{k,ox:48,oy:38,W:cw,H,X:x=>48+x*k,Y:y=>38+y*k}}
+const svg=(f,body,defs='')=>`<svg viewBox="0 0 ${f.W} ${f.H.toFixed(0)}" role="img"><defs>${defs}</defs>${body}</svg>`;
+const m=x=>fmt(x/1000,2)+' м';
+const hatch=id=>`<pattern id="${id}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="6" fill="#000" fill-opacity=".22"/></pattern>`;
+const obsDraw=(f,O)=>O.rects.map(o=>R(f.X(o.x),f.Y(o.y),o.w*f.k,o.d*f.k,'obs')+R(f.X(o.x),f.Y(o.y),o.w*f.k,o.d*f.k,'nh','fill:url(#hxO)')+(o.w*f.k>22&&o.d*f.k>14?T(f.X(o.x+o.w/2),f.Y(o.y+o.d/2)+4,(o.t==='k'?'К':o.t==='s'?'Щ':'Ком')+o.n,'lb'):'')).join('');
+
+function isoFrame(fig,L,W,H,maxH){const cw=fig.clientWidth||640,c=.866,s=.5;const k=Math.min((cw-40)/((L+W)*c),maxH/(H+(L+W)*s));const ox=20+W*c*k+Math.max(0,(cw-40-(L+W)*c*k)/2),oy=18+H*k,HH=oy+(L+W)*s*k+22;fig.style.height=HH+'px';
+ return{k,W:cw,H:HH,P:(x,y,z)=>[ox+(x-y)*c*k,oy+(x+y)*s*k-z*k],floor:`matrix(${c*k} ${s*k} ${-c*k} ${s*k} ${ox} ${oy})`,w1:`matrix(${c*k} ${s*k} 0 ${k} ${ox} ${oy-H*k})`,w4:`matrix(${-c*k} ${s*k} 0 ${k} ${ox} ${oy-H*k})`}}
+const poly=(pts,cls,sty)=>`<polygon points="${pts.map(p=>p.map(f1).join(',')).join(' ')}" class="${cls}"${sty?` style="${sty}"`:''}/>`;
+const prisms=(f,rects,h,fill)=>rects.map(o=>{const P=f.P,x=o.x,y=o.y,w=o.w,d=o.d;
+ return poly([P(x+w,y,0),P(x+w,y+d,0),P(x+w,y+d,h),P(x+w,y,h)],'iso3',`fill:${fill}`)+poly([P(x,y+d,0),P(x+w,y+d,0),P(x+w,y+d,h),P(x,y+d,h)],'iso3',`fill:${fill};filter:brightness(.88)`)+poly([P(x,y,h),P(x+w,y,h),P(x+w,y+d,h),P(x,y+d,h)],'iso3','fill:var(--ob)')}).join('');
+const isoEdges=(f,L,W,H)=>{const P=f.P;return poly([P(0,0,0),P(L,0,0),P(L,W,0),P(0,W,0)],'iso3','fill:none')+poly([P(0,W,0),P(0,0,0),P(L,0,0),P(L,0,H),P(0,0,H),P(0,W,H)],'iso3','fill:none')+Ln(...P(0,0,0),...P(0,0,H),'iso3')};
+const en=(x,d=2)=>String(+(+x).toFixed(d));
+function colorName(hx){const r=parseInt(hx.slice(1,3),16)/255,g=parseInt(hx.slice(3,5),16)/255,b=parseInt(hx.slice(5,7),16)/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,d=mx-mn,s=d?d/(1-Math.abs(2*l-1)):0;
+ let hh=0;if(d){hh=mx===r?((g-b)/d)%6:mx===g?(b-r)/d+2:(r-g)/d+4;hh=(hh*60+360)%360}
+ let n;if(s<0.13)n=l>0.9?'white':l>0.72?'light grey':l>0.45?'grey':l>0.2?'graphite':'black';
+ else if(hh<22||hh>340)n=l<0.45?'terracotta':'warm terracotta';else if(hh<48)n=l>0.75?'beige':l>0.5?'sand':l>0.3?'walnut brown':'dark brown';
+ else if(hh<70)n=l>0.6?'cream':'gold';else if(hh<170)n=s<0.3?'olive green':'green';else if(hh<255)n=l<0.35?'navy blue':l>0.7?'light blue':'blue';else n='purple';
+ return `${n} (${hx})`}
+function fxSym(t,w,d){const E=(cx,cy,rx,ry,c)=>`<ellipse cx="${f1(cx)}" cy="${f1(cy)}" rx="${f1(rx)}" ry="${f1(ry)}" class="${c}"/>`;
+ if(t==='m')return R(0,0,w,d,'fx')+E(w/2,d*.56,w*.36,d*.3,'fx2')+E(w/2,d*.13,22,22,'fx2');
+ if(t==='w')return R(w*.08,0,w*.84,Math.min(180,d*.3),'fx')+E(w/2,Math.min(180,d*.3)+(d-Math.min(180,d*.3))*.48,w*.47,(d-Math.min(180,d*.3))*.48,'fx')+E(w/2,Math.min(180,d*.3)+(d-Math.min(180,d*.3))*.5,w*.3,(d-Math.min(180,d*.3))*.3,'fx2');
+ if(t==='s')return R(0,0,w,d,'fx')+Ln(0,0,w,d,'fxl')+Ln(w,0,0,d,'fxl')+E(w/2,d/2,45,45,'fx2');
+ return`<rect width="${w}" height="${d}" rx="80" class="fx"/><rect x="70" y="70" width="${Math.max(0,w-140)}" height="${Math.max(0,d-140)}" rx="${Math.max(0,(d-140)/2)}" class="fx2"/>`+E(w-180,d/2,30,30,'fx')}
+function prismZ(f,x,y,w,d,z0,z1,fill){const P=f.P;return poly([P(x+w,y,z0),P(x+w,y+d,z0),P(x+w,y+d,z1),P(x+w,y,z1)],'iso3',`fill:${fill};filter:brightness(.93)`)+poly([P(x,y+d,z0),P(x+w,y+d,z0),P(x+w,y+d,z1),P(x,y+d,z1)],'iso3',`fill:${fill};filter:brightness(.84)`)+poly([P(x,y,z1),P(x+w,y,z1),P(x+w,y+d,z1),P(x,y+d,z1)],'iso3',`fill:${fill}`)}
+function fx3d(f,F,L,W){const{x,y,w,h,n,t}=F,wh='#f7f7f5',P=f.P;
+ if(t==='m'){const sink=n===1?[x,y+h*.15,w,h*.7]:n===3?[x,y+h*.15,w,h*.7]:[x+w*.15,y,w*.7,h];return prismZ(f,x,y,w,h,0,820,'#c9b79c')+prismZ(f,...sink,820,870,wh)}
+ if(t==='w'){const td=Math.min(180,(n%2?h:w)*.3),tank=n===1?[x,y,w,td]:n===3?[x,y+h-td,w,td]:n===2?[x+w-td,y,td,h]:[x,y,td,h];
+  const bowl=n===1?[x+w*.1,y+td,w*.8,h-td]:n===3?[x+w*.1,y,w*.8,h-td]:n===2?[x,y+h*.1,w-td,h*.8]:[x+td,y+h*.1,w-td,h*.8];
+  const back=n===1||n===4;return back?prismZ(f,...tank,0,800,wh)+prismZ(f,...bowl,0,410,wh):prismZ(f,...bowl,0,410,wh)+prismZ(f,...tank,0,800,wh)}
+ if(t==='s'){let s=prismZ(f,x,y,w,h,0,60,wh);const G=2000,gl='fill:#9fd0e6;fill-opacity:.28;stroke:#5f97ad;stroke-width:1.2';
+  const sides=[];if(x+w<L-5)sides.push([[x+w,y],[x+w,y+h]]);if(y+h<W-5)sides.push([[x,y+h],[x+w,y+h]]);if(x>5)sides.unshift([[x,y],[x,y+h]]);if(y>5)sides.unshift([[x,y],[x+w,y]]);
+  sides.forEach(([a,c])=>s+=`<polygon points="${[P(a[0],a[1],60),P(c[0],c[1],60),P(c[0],c[1],G),P(a[0],a[1],G)].map(p=>p.map(f1).join(',')).join(' ')}" style="${gl}"/>`);return s}
+ return prismZ(f,x,y,w,h,0,560,wh)}
+function topBase(fig,L,W,maxH){const T2=120,f=frame(fig,L+2*T2,W+2*T2,maxH,{b:10});return{...f,X:x=>f.X(x+T2),Y:y=>f.Y(y+T2),T2}}
+const topDefs=`<filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="3" dy="4" stdDeviation="3.5" flood-opacity=".35"/></filter>`+[['gT',0,0,0,1],['gB',0,1,0,0],['gLf',0,0,1,0],['gR',1,0,0,0]].map(([id,a,b,c,d])=>`<linearGradient id="${id}" x1="${a}" y1="${b}" x2="${c}" y2="${d}"><stop offset="0" stop-color="#000" stop-opacity=".3"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>`).join('')+`<radialGradient id="gLt" cx=".42" cy=".38" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#000" stop-opacity=".14"/></radialGradient>`;
+function topWalls(f,L,W,door,win){const k=f.k,t=f.T2*k,x0=f.X(0),y0=f.Y(0),w=L*k,h=W*k,sd=Math.min(160*k,24);let b='';
+ b+=R(x0,y0,w,h,'','fill:url(#gLt)')+R(x0,y0,w,sd,'','fill:url(#gT)')+R(x0,y0+h-sd,w,sd,'','fill:url(#gB)')+R(x0,y0,sd,h,'','fill:url(#gLf)')+R(x0+w-sd,y0,sd,h,'','fill:url(#gR)');
+ b+=`<path d="M${f1(x0-t)} ${f1(y0-t)}h${f1(w+2*t)}v${f1(h+2*t)}h${f1(-(w+2*t))}z M${f1(x0)} ${f1(y0)}v${f1(h)}h${f1(w)}v${f1(-h)}z" fill="#34322f" fill-rule="evenodd"/>`;
+ if(door&&door.dw>0){const dx=f.X(door.dx),dw=door.dw*k;b+=R(dx,y0-t,dw,t,'','fill:#cfc6b8')+`<path d="M${f1(dx)} ${f1(y0)} L${f1(dx)} ${f1(y0+dw)} A${f1(dw)} ${f1(dw)} 0 0 0 ${f1(dx+dw)} ${f1(y0)}" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="1.2" stroke-dasharray="4 3"/>`+Ln(dx,y0,dx,y0+dw,'',' stroke="#7a6a55" stroke-width="3"')}
+ if(win&&win.w>0){const n=win.n,a=win.x*k,ww=win.w*k;const r=n===1?[x0+a,y0-t,ww,t]:n===3?[x0+a,y0+h,ww,t]:n===2?[x0+w,y0+a,t,ww]:[x0-t,y0+a,t,ww];
+  b+=R(...r,'','fill:#cfe6f1;stroke:#7fb2c9;stroke-width:1')+(n%2?Ln(r[0],r[1]+t/2,r[0]+r[2],r[1]+t/2,'',' stroke="#7fb2c9"'):Ln(r[0]+t/2,r[1],r[0]+t/2,r[1]+r[3],'',' stroke="#7fb2c9"'))}
+ return b}
+const WOOD=['#d9b98a','#d1af7d','#ddc195','#cca673','#d5b383'];
+const fxTr=(f,F,L,W)=>F.n===1?`translate(${f1(f.X(F.off))} ${f1(f.Y(0))})`:F.n===3?`translate(${f1(f.X(F.off+F.fw))} ${f1(f.Y(W))}) rotate(180)`:F.n===2?`translate(${f1(f.X(L))} ${f1(f.Y(F.off))}) rotate(90)`:`translate(${f1(f.X(0))} ${f1(f.Y(F.off+F.fw))}) rotate(-90)`;
+/* ---------- перспективен рендер ---------- */
+let FORCE=false,RID=0;
+const curView=t=>(document.body.classList.contains('printing')||FORCE)?'all':(st['v'+t]||'plan');
+function showFigs(t,vw){document.querySelectorAll(`#P-${t} [data-v]`).forEach(e=>e.hidden=!(vw==='all'||e.dataset.v===vw));document.querySelectorAll(`#V-${t} button`).forEach(b=>b.setAttribute('aria-pressed',b.dataset.vw.split('|')[1]===vw))}
+function shade(hx,k){if(typeof hx!=='string'||hx[0]!=='#'||hx.length!==7)return hx;const n=parseInt(hx.slice(1),16);return'#'+[n>>16&255,n>>8&255,n&255].map(x=>Math.max(0,Math.min(255,Math.round(x*k))).toString(16).padStart(2,'0')).join('')}
+function boxF(x0,y0,x1,y1,z0,z1,c){const q=k=>shade(c,k);return[
+ {p:[[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]],n:[0,0,1],c},
+ {p:[[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1]],n:[0,-1,0],c:q(.93)},
+ {p:[[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]],n:[0,1,0],c:q(.8)},
+ {p:[[x0,y0,z0],[x0,y1,z0],[x0,y1,z1],[x0,y0,z1]],n:[-1,0,0],c:q(.87)},
+ {p:[[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],[x1,y0,z1]],n:[1,0,0],c:q(.76)}]}
+function cylF(cx,cy,rx,ry,z0,z1,c,sg=18){const P=[];for(let i=0;i<sg;i++){const a=i/sg*2*Math.PI;P.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)])}
+ const F=[{p:P.map(q=>[q[0],q[1],z1]),n:[0,0,1],c}];
+ if(z1-z0>1)for(let i=0;i<sg;i++){const a=P[i],b=P[(i+1)%sg],mm=(i+.5)/sg*2*Math.PI,nx=Math.cos(mm),ny=Math.sin(mm);F.push({p:[[a[0],a[1],z0],[b[0],b[1],z0],[b[0],b[1],z1],[a[0],a[1],z1]],n:[nx,ny,0],c:shade(c,.84-.08*ny-.06*nx)})}
+ return F}
+const B=(u0,v0,u1,v1,z0,z1,c)=>({t:'box',u0,v0,u1,v1,z0,z1,c}),Cy=(u,v,ru,rv,z0,z1,c)=>({t:'cyl',u,v,ru,rv,z0,z1,c}),Tp=(u0,v0,u1,v1,z,c)=>({t:'top',u0,v0,u1,v1,z0:z,z1:z,c});
+function placer(n,off,gap,w,d,L,W,rot){let pt;
+ if(n==='f'){const X=off,Y=gap;pt=rot==90?(u,v)=>[X+d-v,Y+u]:rot==180?(u,v)=>[X+w-u,Y+d-v]:rot==270?(u,v)=>[X+v,Y+w-u]:(u,v)=>[X+u,Y+v];return{pt,sw:rot==90||rot==270}}
+ n=+n;pt=n===1?(u,v)=>[off+u,gap+v]:n===3?(u,v)=>[off+w-u,W-gap-v]:n===2?(u,v)=>[L-gap-v,off+u]:(u,v)=>[gap+v,off+w-u];return{pt,sw:n===2||n===4}}
+function mkObj(faces){let bb=[1e9,1e9,-1e9,-1e9],h=0;faces.forEach(f=>f.p.forEach(p=>{bb=[Math.min(bb[0],p[0]),Math.min(bb[1],p[1]),Math.max(bb[2],p[0]),Math.max(bb[3],p[1])];h=Math.max(h,p[2])}));return{faces,bb,h}}
+function partsFaces(parts,pl){const F=[];parts.forEach(q=>{
+ if(q.t==='cyl'){const[cx,cy]=pl.pt(q.u,q.v);F.push(...cylF(cx,cy,pl.sw?q.rv:q.ru,pl.sw?q.ru:q.rv,q.z0,q.z1,q.c))}
+ else{const a=pl.pt(q.u0,q.v0),b=pl.pt(q.u1,q.v1),x0=Math.min(a[0],b[0]),x1=Math.max(a[0],b[0]),y0=Math.min(a[1],b[1]),y1=Math.max(a[1],b[1]);
+  if(q.t==='top')F.push({p:[[x0,y0,q.z1],[x1,y0,q.z1],[x1,y1,q.z1],[x0,y1,q.z1]],n:[0,0,1],c:q.c});else F.push(...boxF(x0,y0,x1,y1,q.z0,q.z1,q.c))}});return F}
+const fr4=(x0,y0,x1,y1)=>[[x0,y0,0],[x1,y0,0],[x1,y1,0],[x0,y1,0]];
+const wr4=(n,u0,z0,u1,z1,L,W)=>n===1?[[u0,0,z0],[u1,0,z0],[u1,0,z1],[u0,0,z1]]:n===3?[[u0,W,z0],[u1,W,z0],[u1,W,z1],[u0,W,z1]]:n===2?[[L,u0,z0],[L,u1,z0],[L,u1,z1],[L,u0,z1]]:[[0,u0,z0],[0,u1,z0],[0,u1,z1],[0,u0,z1]];
+const rotP=(x,y,cx,cy,a)=>{const c=Math.cos(a),s2=Math.sin(a);return[cx+(x-cx)*c-(y-cy)*s2,cy+(x-cx)*s2+(y-cy)*c]};
+const rq=(x,y,w,h,cx,cy,a)=>[[x,y],[x+w,y],[x+w,y+h],[x,y+h]].map(([px,py])=>[...rotP(px,py,cx,cy,a),0]);
+const WLF={1:.97,2:.9,3:.93,4:.86};
+function render3d(fig,sc,view,maxH){
+ const{L,W,H}=sc,cw=fig.clientWidth||620;let C,fw,rt,up=[0,0,1],pl;
+ if(view==='top'){C=[L/2,W/2,H*2.6];fw=[0,0,-1];rt=[1,0,0];up=[0,-1,0];pl=['f','w1','w2','w3','w4']}
+ else{const n=+view,S=n%2?L:W,D=Math.max(S,H)*.95,cz=H*.48;
+  if(n===1){C=[L/2,W+D,cz];fw=[0,-1,0];rt=[1,0,0];pl=['f','w1','w2','w4']}
+  else if(n===3){C=[L/2,-D,cz];fw=[0,1,0];rt=[-1,0,0];pl=['f','w3','w2','w4']}
+  else if(n===2){C=[-D,W/2,cz];fw=[1,0,0];rt=[0,1,0];pl=['f','w2','w1','w3']}
+  else{C=[L+D,W/2,cz];fw=[-1,0,0];rt=[0,-1,0];pl=['f','w4','w1','w3']}}
+ const pj=p=>{const d=[p[0]-C[0],p[1]-C[1],p[2]-C[2]],f=d[0]*fw[0]+d[1]*fw[1]+d[2]*fw[2];return[(d[0]*rt[0]+d[1]*rt[1]+d[2]*rt[2])/f,-(d[0]*up[0]+d[1]*up[1]+d[2]*up[2])/f]};
+ let a=[1e9,1e9,-1e9,-1e9];pl.forEach(k=>sc.planes[k].base.forEach(p=>{const q=pj(p);a=[Math.min(a[0],q[0]),Math.min(a[1],q[1]),Math.max(a[2],q[0]),Math.max(a[3],q[1])]}));
+ const F=Math.min((cw-16)/(a[2]-a[0]),maxH/(a[3]-a[1])),Hd=(a[3]-a[1])*F+16,ox=(cw-(a[2]-a[0])*F)/2-a[0]*F,oy=8-a[1]*F;fig.style.height=Hd+'px';
+ const S2=p=>{const q=pj(p);return f1(ox+q[0]*F)+','+f1(oy+q[1]*F)};
+ const P=(pts,c,ex='')=>`<polygon points="${pts.map(S2).join(' ')}" fill="${c}"${ex}/>`;
+ const uid='r'+(++RID);let defs='',b='';
+ pl.forEach(k=>{const Pl=sc.planes[k],lf=Pl.lf??1;defs+=`<clipPath id="${uid}${k}"><polygon points="${Pl.base.map(S2).join(' ')}"/></clipPath>`;
+  b+=P(Pl.base,shade(Pl.c,lf))+`<g clip-path="url(#${uid}${k})">`+Pl.items.map(it=>P(it.p,it.c==='none'?'none':shade(it.c,lf),it.s?` stroke="${shade(it.s,lf)}" stroke-width="${it.sw||.6}"`:'')).join('')+'</g>'});
+ const near=o=>{if(view==='top')return false;const n=+view,d=n===1?W-o.bb[3]:n===3?o.bb[1]:n===2?o.bb[0]:L-o.bb[2];return d<300||(d<450&&o.h>1100)};
+ const fs=[];sc.objs.forEach(o=>{if(near(o))return;o.faces.forEach(fc=>{const ce=[0,0,0];fc.p.forEach(p=>{ce[0]+=p[0];ce[1]+=p[1];ce[2]+=p[2]});ce.forEach((x,i)=>ce[i]=x/fc.p.length);
+  const v=[C[0]-ce[0],C[1]-ce[1],C[2]-ce[2]];if(!fc.g&&fc.n&&fc.n[0]*v[0]+fc.n[1]*v[1]+fc.n[2]*v[2]<=0)return;fs.push([Math.hypot(...v),fc])})});
+ fs.sort((x,y)=>y[0]-x[0]);
+ b+=pl.map(k=>P(sc.planes[k].base,'none',' stroke="#2a2826" stroke-width="1.2" stroke-linejoin="round"')).join('');
+ b+=fs.map(([,fc])=>P(fc.p,fc.c,fc.g?` fill-opacity="${fc.o||.26}" stroke="#6fa7bf" stroke-width="1"`:` stroke="${shade(fc.c,.72)}" stroke-width=".5" stroke-linejoin="round"`)).join('');
+
+ fig.innerHTML=`<svg viewBox="0 0 ${cw} ${f1(Hd)}" role="img"><defs>${defs}</defs>${b}</svg>`}
+function renderWalls(box,sc,name){const nar=(box.clientWidth||640)<600;
+ box.innerHTML=[1,2,3,4].map(n=>`<div><div class="fig" data-cap="${name} — стена ${n} (изглед от стаята)"></div><div class="small fcap">Стена ${n} — изглед от стаята</div></div>`).join('');
+ [...box.querySelectorAll('.fig')].forEach((fg,i)=>render3d(fg,sc,String(i+1),box.classList.contains('one')?420:nar?300:270))}
+const camFor=(pv,S,on)=>{if(/^[1-4]$/.test(pv)){const o=on?on(+pv):'';return `Eye-level camera view from inside the room facing wall ${pv} (${en(S(+pv)/1000,2)} m wide)${o?'; on and in front of this wall: '+o:''}; the two side walls are partly visible, wide-angle lens`}return camTxt(pv)};
+const camTxt=vw=>({top:'Top-down view from directly above with the ceiling removed: camera at ceiling height looking straight down, the floor in the centre and all four walls visible in perspective around it (dollhouse view from above)',walls:'Eye-level view from inside the room looking at one wall, wide-angle lens','3d':'Isometric cutaway view from above at 45 degrees, two walls removed'}[vw]||'Eye-level wide-angle view');
+function genBoards(L,W,o,colr){const out=[],{bl,bw,pat,dir}=o;let i=0;
+ if(pat==='d'||pat==='hb'){const cx=L/2,cy=W/2,D=Math.hypot(L,W),a=bw,l=bl;
+  if(pat==='d'){const an=(dir==='l'?45:-45)*Math.PI/180;let r=0;for(let y=cy-D/2;y<cy+D/2;y+=a,r++){const of=(r%3)*l/3;for(let x=cx-D/2-of;x<cx+D/2;x+=l){const c=rotP(x+l/2,y+a/2,cx,cy,an);if(c[0]<-l||c[0]>L+l||c[1]<-l||c[1]>W+l)continue;out.push({p:rq(x,y,l,a,cx,cy,an),c:colr(i++,r)})}}}
+  else{const an=(dir==='l'?-45:45)*Math.PI/180,K=C(D/a)+2,S=C(D/(2*l))+2;for(let s2=-S;s2<=S;s2++)for(let q=-K;q<=K;q++){const hx=cx+q*a+s2*l,hy=cy+q*a-s2*l;[[hx,hy,l,a],[hx+l,hy+a-l,a,l]].forEach(([x,y,w,hh],k)=>{const c=rotP(x+w/2,y+hh/2,cx,cy,an);if(c[0]<-l||c[0]>L+l||c[1]<-l||c[1]>W+l)return;out.push({p:rq(x,y,w,hh,cx,cy,an),c:colr(i++,k)})})}}}
+ else{const al=dir==='l',A=al?L:W,Bv=al?W:L;let off=0,seed=11;const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
+  for(let r=0,y=0;y<Bv;y+=bw,r++){if(pat==='n')off=(r%o.N)*bl/o.N;else if(pat==='f')off=(r*o.fo)%bl;else if(r>0){let c,k=0;do{c=(off+bl*(0.3+0.4*rnd()))%bl;k++}while((c<0.25*bl||c>0.85*bl)&&k<20);off=c}
+   for(let x=off>1?off-bl:0;x<A;x+=bl){const a=Math.max(0,x),b=Math.min(A,x+bl),h2=Math.min(bw,Bv-y);out.push({p:al?fr4(a,y,b,y+h2):fr4(y,a,y+h2,b),c:colr(i++,r)})}}}
+ return out}
+const PO=()=>{const bl=v('pBL')||1380;return{bl,bw:v('pBW')||193,pat:s('pPat'),N:+s('pN')||3,fo:(v('pOff')*10)%bl,dir:s('pDir')}};
+const PNAME=()=>({n:`joints offset every ${s('pN')} rows`,f:`${v('pOff')} cm row offset`,r:'random joint offset',d:'diagonal lay',hb:'herringbone'}[s('pPat')]+`, planks ${v('pBL')}x${v('pBW')} mm`);
+/* ---------- ПАРКЕТ ---------- */
+function calcP(){
+ const L=v('pL')*1000,W=v('pW')*1000;if(L<300||W<300)return null;
+ const dir=s('pDir'),pat=s('pPat'),bl=v('pBL')||1380,bw=v('pBW')||193,g=v('pGap');
+ const A=(dir==='l'?L:W)-2*g,B=(dir==='l'?W:L)-2*g;
+ const pcs=[],warn=[],info=[];
+ const O=obsInfo(st.obsp,L,W,warn);
+ const map=p=>dir==='l'?[g+p.a,g+p.b,p.l,p.w]:[g+p.b,g+p.a,p.w,p.l];
+ if(pat==='n'||pat==='f'||pat==='r'){
+  const N=+s('pN'),fo=(v('pOff')*10)%bl;
+  const n=Math.max(1,C(B/bw-1e-6));let rem=B-(n-1)*bw,first=Math.min(bw,B),last=rem;
+  if(n>1&&rem<bw/3){first=last=(rem+bw)/2;warn.push(`Последният ред щеше да е само ${fmt(rem/10,1)} см — затова първият и последният ред се изрязват поравно на ${fmt(first/10,1)} см.`)}
+  else if(n>1)info.push(`Първи ред: цяла дъска (${fmt(bw/10,1)} см). Последен ред: ${fmt(rem/10,1)} см ширина.`);
+  if(pat==='n'){info.push(`Всеки ред е изместен с ${fmt(bl/N/10,1)} см (1/${N} от дъската); подредбата се повтаря през ${N} реда.`);if(bl/N<300)warn.push(`Отместване ${fmt(bl/N/10,1)} см е под 30 см — фугите ще са твърде близо. Избери по-малко редове за повторение.`)}
+  if(pat==='f'){const mn=Math.min(fo,bl-fo);if(mn<300)warn.push(`Фугите на съседни редове се разминават само с ${fmt(mn/10,1)} см — препоръчително е поне 30 см.`);info.push(`Всеки ред е изместен с ${fmt(v('pOff'),0)} см спрямо предишния.`)}
+  let y=0,off=0,seed=11,short=0;const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
+  for(let r=0;r<n;r++){
+   const h=n===1?B:r===0?first:r===n-1?last:bw;
+   if(pat==='n')off=(r%N)*bl/N;else if(pat==='f')off=(r*fo)%bl;
+   else if(r>0){let c,i=0;do{c=(off+bl*(0.3+0.4*rnd()))%bl;i++}while((c<0.25*bl||c>0.85*bl)&&i<20);off=c}
+   let x=0;const p0=off>1?off:bl;let len=Math.min(p0,A);
+   const push=(a,l)=>{let cut=l<bl-0.5||h<bw-0.5;const sh=l<300&&l<bl-0.5;if(sh)short++;const[mx,my,mw,mh]=map({a,b:y,l,w:h});
+    if(inObs(O.rects,mx,my,mw,mh))return;if(hitObs(O.rects,mx,my,mw,mh))cut=true;pcs.push({a,b:y,l,w:h,c:sh?'bs':cut?'bc':'bd'})};
+   push(0,len);x=len;
+   while(x<A-0.5){len=Math.min(bl,A-x);push(x,len);x+=len}
+   y+=h;
+  }
+  if(short)warn.push(`${short} парчета са по-къси от 30 см (в червено). Започни тези редове с по-дълго парче или смени отместването.`);
+ }else if(pat==='d')info.push('Диагонал: започни от най-дългата права линия в стаята (обикновено от вратата) с опъната връв под 45°.');
+ else info.push(`Рибена кост: нужни са дъски „ляво“ и „дясно“ (по равно). Подходящи размери: 600×100, 600×120 мм. Започни от средата на стаята по опъната връв.`);
+ if(O.rects.length)info.push('Около колоните и комините също се оставя фуга 10 мм, която се покрива с перваз.');
+ const area=L*W/1e6-O.area,wp=v('pWaste'),need=area*(1+wp/100),pack=v('pPack')||1,packs=C(need/pack-1e-9);
+ const boards=C(need/(bl*bw/1e6)),per=Math.max(0,2*(L+W)/1000-v('pDoor')+O.exp-O.con),roll=v('pRoll')||10;
+ if(Math.max(L,W)>8000)warn.push('Стая над 8 м — повечето ламинати изискват дилатационна фуга (преходен профил) по средата.');
+ const rows=[
+  ['Паркет / ламинат',packs,'пакета',`${fmt(packs*pack)} м² · ≈${boards} дъски`+(pat==='hb'?' (½ ляви, ½ десни)':'')],
+  ['Подложка',C(area*1.05/roll),'ролки',`${fmt(area*1.05,1)} м² (5% запас)`],
+  ['PE фолио 0,2 мм',C(area*1.15),'м²','при бетонна основа, застъпване 20 см'],
+  ['Первази',C(per*1.1/2.5),'бр. × 2,5 м',`${fmt(per,1)} м + 10%`+(O.exp?' (вкл. около колоните)':'')],
+  ['Скоби за первази',C(per/0.5),'бр.','през 50 см'],
+  ['Вътрешни ъгли за первази',Math.max(0,4+O.inner),'бр.',''],
+  ['Външни ъгли за первази',O.outer,'бр.','около колони и комини'],
+  ['Крайни капачки',v('pDoor')>0?2:0,'бр.','при вратата'],
+  ['Преходен профил',v('pDoor')>0?C(v('pDoor')/0.9-1e-9):0,'бр.','на прага'],
+  ['Дистанционни клинове',C(per/0.5),'бр.',`фуга ${fmt(g,0)} мм през 50 см`]];
+ return{key:[packs,'пакета',`${fmt(area)} м² + ${fmt(wp,0)}% фира = ${fmt(need)} м²`],key2:[C(per*1.1/2.5),'первази',`${fmt(per,1)} м за первази`],rows,warn,info,
+ prompt(pv=st.vp){const pn={n:`straight lay with joints offset every ${s('pN')} rows`,f:`straight lay with ${v('pOff')} cm offset between rows`,r:'random joint offset (natural look)',d:'diagonal 45° lay',hb:'classic herringbone pattern'}[pat];
+  return `Photorealistic interior render of an empty, bright living room, ${en(L/1000,2)} x ${en(W/1000,2)} m, with natural oak wood flooring: planks ${bl} x ${bw} mm, ${pn}, running along the ${dir==='l'?'longer':'shorter'} wall. White painted walls, white skirting boards${O.rects.length?`, ${O.rects.length} rectangular plastered ${O.rects.length>1?'columns/chimney breasts':'column/chimney breast'} in the room`:''}. Soft daylight from a large window, ${camFor(pv,n=>n%2?L:W)}, architectural interior photography, 4k.`},
+ scene(){const Hr=2600,fI=[];
+  if(pat==='d'||pat==='hb'){const cx=L/2,cy=W/2,D=Math.hypot(L,W),a=bw,l=bl;let i=0;
+   if(pat==='d'){const an=(dir==='l'?45:-45)*Math.PI/180;let r=0;for(let y=cy-D/2;y<cy+D/2;y+=a,r++){const o=(r%3)*l/3;for(let x=cx-D/2-o;x<cx+D/2;x+=l){const c=rotP(x+l/2,y+a/2,cx,cy,an);if(c[0]<-l||c[0]>L+l||c[1]<-l||c[1]>W+l)continue;fI.push({p:rq(x,y,l,a,cx,cy,an),c:WOOD[(i++*7)%5],s:'#a8865a',sw:.4})}}}
+   else{const an=(dir==='l'?-45:45)*Math.PI/180,K=C(D/a)+2,S=C(D/(2*l))+2;for(let s2=-S;s2<=S;s2++)for(let q=-K;q<=K;q++){const hx=cx+q*a+s2*l,hy=cy+q*a-s2*l;
+    [[hx,hy,l,a],[hx+l,hy+a-l,a,l]].forEach(([x,y,w,hh],k)=>{const c=rotP(x+w/2,y+hh/2,cx,cy,an);if(c[0]<-l||c[0]>L+l||c[1]<-l||c[1]>W+l)return;fI.push({p:rq(x,y,w,hh,cx,cy,an),c:WOOD[(i++*7+k)%5],s:'#a8865a',sw:.4})})}}}
+  else pcs.forEach((p,i)=>{const[x,y,w,h]=map(p);fI.push({p:fr4(x,y,x+w,y+h),c:WOOD[(i*7+((p.a/97)|0))%5],s:'#a8865a',sw:.4})});
+  const planes={f:{base:fr4(0,0,L,W),c:'#a8865a',items:fI}};
+  [1,2,3,4].forEach(n=>{const S=n%2?L:W;planes['w'+n]={base:wr4(n,0,0,S,Hr,L,W),c:'#efebe4',lf:WLF[n],items:[{p:wr4(n,0,0,S,70,L,W),c:'#fbfbfa'}]}});
+  return{L,W,H:Hr,planes,objs:O.rects.map(o=>mkObj(boxF(o.x,o.y,o.x+o.w,o.y+o.d,0,Hr,'#efebe4')))}},
+ draw(){const vw=curView('p'),A=vw==='all';showFigs('p',vw);
+  const fig=$('#G-p'),f3=$('#G-p3'),f4=$('#G-p4');
+  const patStr=(kk,cx,cy,D)=>{let b='';const a=bw*kk,l=bl*kk;
+   if(pat==='d'){let r=0;b+=`<g transform="rotate(${dir==='l'?45:-45} ${f1(cx)} ${f1(cy)})">`;
+    for(let y=cy-D/2;y<cy+D/2;y+=a,r++){const o=(r%3)*l/3;for(let x=cx-D/2-o;x<cx+D/2;x+=l)b+=R(x,y,l,a,'bd')}}
+   else{b+=`<g transform="rotate(${dir==='l'?-45:45} ${f1(cx)} ${f1(cy)})">`;const K=C(D/a)+2,S=C(D/(2*l))+2;
+    for(let s2=-S;s2<=S;s2++)for(let q=-K;q<=K;q++){const hx=cx+q*a+s2*l,hy=cy+q*a-s2*l;
+     if(Math.abs(hx-cx)>D+l||Math.abs(hy-cy)>D+l)continue;b+=R(hx,hy,l,a,'bd')+R(hx+l,hy+a-l,a,l,'bd2')}}
+   return b+'</g>'};
+  if(A||vw==='plan'){const f=frame(fig,L,W,520);let b='';
+   if(pat==='d'||pat==='hb')b+=`<clipPath id="cpp"><rect x="${f.X(g)}" y="${f.Y(g)}" width="${(L-2*g)*f.k}" height="${(W-2*g)*f.k}"/></clipPath><g clip-path="url(#cpp)">${patStr(f.k,f.X(L/2),f.Y(W/2),Math.hypot(L,W)*f.k)}</g>`;
+   else pcs.forEach(p=>{const[x,y,w,h]=map(p);b+=R(f.X(x),f.Y(y),w*f.k,h*f.k,p.c)});
+   b+=obsDraw(f,O);
+   b+=R(f.X(0),f.Y(0),L*f.k,W*f.k,'wall');
+   b+=dH(f.X(0),f.X(L),f.oy-16,m(L))+dV(f.ox-18,f.Y(0),f.Y(W),m(W));
+   fig.innerHTML=svg(f,b,hatch('hxO'))}
+  if(A||vw==='top')render3d(f4,this.scene(),'top',520);
+  if(A||vw==='walls')renderWalls($('#G-p5'),this.scene(),'Паркет');
+  if(A||vw==='3d'){const HH=1100,f=isoFrame(f3,L,W,HH,460);let fl=R(0,0,L,W,'','fill:var(--wd2)');
+   if(pat==='d'||pat==='hb')fl+=`<g clip-path="url(#c3p)">${patStr(1,L/2,W/2,Math.hypot(L,W))}</g>`;
+   else pcs.forEach(p=>{const[x,y,w,h]=map(p);fl+=R(x,y,w,h,p.c==='bs'?'bs':'bd')});
+   let b=`<g transform="${f.floor}" class="iso">${fl}</g>`;
+   const wl=S2=>R(0,0,S2,HH,'','fill:var(--gk)')+R(0,HH-70,S2,70,'','fill:var(--pn);stroke:var(--mu)');
+   b+=`<g transform="${f.w1}" class="iso">${wl(L)}</g><g transform="${f.w4}" class="iso">${wl(W)}${R(0,0,W,HH,'','fill:#000;opacity:.08')}</g>`;
+   b+=prisms(f,O.rects,HH,'var(--gk)');
+   b+=isoEdges(f,L,W,HH)+T(f.W/2,f.H-4,'3D изглед (стените са срязани на 1,1 м)','dl');
+   f3.innerHTML=svg(f,b,`<clipPath id="c3p"><rect width="${L}" height="${W}"/></clipPath>`)}}};
+}
+
+/* ---------- ГИПСОКАРТОН ---------- */
+const scrRows=(a,lay)=>lay===1?[['Винтове TN 3,5×25',C(a*20),'бр.','≈20 бр./м² за слой']]:[['Винтове TN 3,5×25',C(a*9),'бр.','първи слой, ≈9 бр./м²'],['Винтове TN 3,5×35',C(a*20),'бр.','втори слой, ≈20 бр./м²']];
+const finRows=(a,lay)=>[['Хартиена/фибро лента за фуги',C(a*1.5),'м','≈1,5 м/м²'],['Шпакловка за фуги',C(a*(0.4+(lay-1)*0.2)),'кг',`≈${fmt(0.4+(lay-1)*0.2,1)} кг/м²`],['Грунд',C(a*0.15),'л','≈0,15 л/м²']];
+function mergeRows(lists){const mp=new Map();lists.flat().forEach(r=>{const k=r[0]+'|'+r[2];if(mp.has(k))mp.get(k)[1]+=r[1];else mp.set(k,[...r])});return[...mp.values()]}
+const LG={cw:'<span><i style="background:var(--st)"></i>CW / CD профили</span>',uw:'<span><i style="background:var(--uw)"></i>UW / UD водачи, носещи CD</span>',ua:'<span><i style="background:var(--ua)"></i>UA каса, кръстата връзка</span>',hg:'<span><i style="background:var(--ac);border-radius:50%"></i>окачвач</span>',spl:'<span><i style="background:var(--ac)"></i>снаждане</span>',gk:'<span><i style="background:var(--gk)"></i>плоскост</span><span><i style="background:color-mix(in srgb,var(--gk) 78%,var(--ac))"></i>рязана плоскост</span><span><i style="background:var(--st)"></i>профил отзад (пунктир)</span>'};
+function boardsCol(b,X,Y,S,H,bh,k,shift){let col=0;
+ for(let x=-shift;x<S-0.5;x+=1200,col++){const a=Math.max(0,x),e=Math.min(S,x+1200),cutw=e-a<1199;
+  const first=H<=bh?H:(col%2?Math.max(400,Math.round(bh/2)):bh);let y=0,h=Math.min(first,H);
+  while(h>0.5){b.s+=R(X(a),Y(y+h),(e-a)*k,h*k,cutw||h<bh-0.5?'gkc':'gk');y+=h;h=Math.min(bh,H-y)}
+  if((e-a)*k>34)b.s+=T(X((a+e)/2),Y(H)+16,fmt((e-a)/10,0)+' см','lb')}}
+
+function partition(P){const{L,H,sp,pl,bh,lay,wp,sides}=P;let{dw,dh,dx}=P;const warn=[],info=[];
+ if(dw>0&&(dx+dw>L-50||dh>H-100)){warn.push('Вратата не се побира в стената — проверете размерите. Изчислено е без врата.');dw=0}
+ let pos=[];for(let x=0;x<L-50;x+=sp)pos.push(x);pos.push(L);
+ let crip=[];if(dw>0){crip=pos.filter(x=>x>dx-60&&x<dx+dw+60);pos=pos.filter(x=>!(x>dx-60&&x<dx+dw+60))}
+ const per=H<=pl?1:C((H-pl)/(pl-500))+1;
+ const cwN=pos.length*per+(crip.length?C(crip.length*(H-dh)/pl):0);
+ const uwLen=2*L-dw+(dw>0?dw+300:0),uwN=C(uwLen*1.05/pl);
+ const net=(L*H-dw*dh)/1e6,area=net*sides,sheets=C(area*lay*(1+wp/100)/(1.2*bh/1000));
+ if(H>pl)info.push(`Стената е по-висока от профила (${pl/1000} м) — всеки CW се удължава със застъпване ≥ 50 см (червените зони).`);
+ info.push(`${pos.length} колони CW през ${sp} мм${dw>0?', 2 колони UA на касата и хоризонтален UW над вратата':''}. Веригата отдолу е в см, от ос до ос.`);
+ if(H>bh)info.push('Стената е по-висока от плоскостта — хоризонталните фуги се разминават с ≥ 40 см.');
+ if(sides>1)info.push('Плоскостите от страна Б са изместени с 600 мм, за да не съвпадат фугите от двете страни.');
+ const rows=[['Гипсокартон 12,5 мм',sheets,'бр.',`1200×${bh} · ${fmt(area*lay,1)} м² + ${fmt(wp,0)}%`],
+  ['CW профил',cwN,`бр. × ${pl/1000} м`,`${pos.length} колони`+(crip.length?` + ${crip.length} къси над вратата`:'')],
+  ['UW профил',uwN,`бр. × ${pl/1000} м`,`${fmt(uwLen/1000,1)} м`]];
+ if(dw>0)rows.push(['UA профил (или двоен CW) за касата',2,`бр. × ${fmt(H/1000,1)} м`,'укрепване на вратата'],['Ъгъл за UA профил',4,'бр.','към пода и тавана']);
+ rows.push(['Уплътнителна лента',C((2*L+2*H)/1000*1.05),'м','под водачите'],['Дюбели 6×40 за водачи',C((2*L+2*H)/800)+2,'бр.','през ≈80 см'],...scrRows(area,lay));
+ if(P.wool)rows.push(['Минерална вата 50 мм',C(net*1.05*10)/10,'м²','в кухината']);
+ rows.push(...finRows(area,lay));
+ return{name:'Стена',rows,warn,info,sheets,prof:cwN+uwN,profTxt:`${cwN} CW + ${uwN} UW`,area:area*lay,
+ views:[['k','Конструкция'],['a','Плоскости – страна А'],...(sides>1?[['b','Плоскости – страна Б']]:[])],
+ leg:vw=>vw==='k'?LG.cw+LG.uw+(dw>0?LG.ua:'')+(H>pl?LG.spl:''):LG.gk,
+ draw(fig,view){const f=frame(fig,L,H,460,{b:view==='k'?54:22});const k=f.k,Y=y=>f.Y(H-y),o={s:''};
+  const cwW=Math.max(50*k,5),uwT=Math.max(40*k,5);
+  const studX=x=>x<=0?f.X(0):x>=L?f.X(L)-cwW:f.X(x)-cwW/2;
+  if(view==='k'){let b=R(f.X(0),Y(H),L*k,H*k,'bgw');
+   if(dw>0)b+=R(f.X(dx),Y(dh),dw*k,dh*k,'open')+T(f.X(dx+dw/2),Y(dh/2),'врата','lb');
+   pos.forEach(x=>{b+=R(studX(x),Y(H),cwW,H*k,'cw');if(H>pl)b+=R(studX(x),Y(pl),cwW,500*k,'spl')});
+   if(dw>0){crip.forEach(x=>b+=R(f.X(x)-cwW/2,Y(H),cwW,(H-dh)*k,'cw'));b+=R(f.X(dx)-cwW,Y(H),cwW,H*k,'ua')+R(f.X(dx+dw),Y(H),cwW,H*k,'ua')+R(f.X(dx-150),Y(dh)-uwT,(dw+300)*k,uwT,'uw')}
+   b+=R(f.X(0),Y(H),L*k,uwT,'uw');
+   b+=dw>0?R(f.X(0),Y(0)-uwT,dx*k,uwT,'uw')+R(f.X(dx+dw),Y(0)-uwT,(L-dx-dw)*k,uwT,'uw'):R(f.X(0),Y(0)-uwT,L*k,uwT,'uw');
+   for(let x=150;x<L;x+=800){b+=Cc(f.X(x),Y(H)+uwT/2,2,'dw');if(!(dw>0&&x>dx&&x<dx+dw))b+=Cc(f.X(x),Y(0)-uwT/2,2,'dw')}
+   const yb=Y(0);let last=-99;pos.forEach((x,i)=>{const px=x>=L?f.X(L)-cwW/2:x<=0?f.X(0)+cwW/2:f.X(x);if(px-last>14){b+=T(px,yb+15,i+1,'sm');last=px}});
+   b+=chainH(f,[...new Set([...pos,...(dw>0?[dx,dx+dw]:[])])].sort((a,c)=>a-c),yb+40);
+   o.s=b;
+  }else{boardsCol(o,f.X,Y,L,H,bh,k,view==='b'?600:0);
+   if(dw>0)o.s+=R(f.X(dx),Y(dh),dw*k,dh*k,'open')+T(f.X(dx+dw/2),Y(dh/2),'врата','lb');
+   [...pos,...(dw>0?[dx,dx+dw]:[])].forEach(x=>o.s+=Ln(f.X(x),Y(0),f.X(x),Y(H),'prf'))}
+  o.s+=R(f.X(0),Y(H),L*k,H*k,'wall')+dH(f.X(0),f.X(L),f.oy-16,m(L))+dV(f.ox-18,Y(H),Y(0),m(H));
+  fig.innerHTML=svg(f,o.s)}};
+}
+
+function lining(P){const{L,W,H,sp,pl,bh,lay,wp,sys,sel,ops}=P;const warn=[],info=[];const hs=sys==='h';
+ const walls=sel.map(n=>{const S=n%2?L:W,o=ops(n).filter(q=>{if(q[0]+q[2]>S+1){warn.push(`Отвор на стена ${n} излиза извън стената — пропуснат.`);return false}return true});
+  const pos=[];for(let x=0;x<S-50;x+=sp)pos.push(x);pos.push(S);
+  const has=k=>sel.includes(k);if((n===1&&has(4))||(n===2&&has(1)))pos.shift();if((n===3&&has(2))||(n===4&&has(3)))pos.pop();
+  const segs=[],hor=[];
+  pos.forEach(x=>{let sg=[[0,H]];o.forEach(q=>{if(x>q[0]+30&&x<q[0]+q[2]-30)sg=sg.flatMap(([a,c])=>{const r=[];if(q[1]>a)r.push([a,Math.min(c,q[1])]);if(q[1]+q[3]<c)r.push([Math.max(a,q[1]+q[3]),c]);return r})});sg.forEach(([a,c])=>{if(c-a>50)segs.push([x,a,c])})});
+  o.forEach(q=>{[q[0],q[0]+q[2]].forEach(x=>{if(!pos.some(p=>Math.abs(p-x)<60))segs.push([x,0,H])});
+   if(q[1]+q[3]<H-50)hor.push([q[0]-150,q[0]+q[2]+150,q[1]+q[3]]);if(q[1]>50)hor.push([q[0]-150,q[0]+q[2]+150,q[1]])});
+  const tk=[...new Set([...pos,...o.flatMap(q=>[q[0],q[0]+q[2]])])].sort((a,c)=>a-c);
+  return{n,S,o,pos,segs,hor,tk}});
+ let full=0,shortLen=0,horLen=0,udLen=0,hg=0,area=0,winPer=0;const per=H<=pl?1:C((H-pl)/(pl-500))+1;
+ walls.forEach(w=>{w.segs.forEach(([x,a,c])=>{if(c-a>=H-1)full+=per;else shortLen+=c-a;if(hs)hg+=C((c-a)/1250)});
+  w.hor.forEach(([a,c])=>horLen+=Math.min(w.S,c)-Math.max(0,a));
+  udLen+=(P.noTop?1:2)*w.S-w.o.filter(q=>q[1]<=0).reduce((a,q)=>a+q[2],0);
+  area+=(w.S*H-w.o.reduce((a,q)=>a+q[2]*q[3],0))/1e6;
+  w.o.filter(q=>q[1]>0).forEach(q=>winPer+=2*q[2]+2*q[3])});
+ const vN=full+C(shortLen/pl),udN=C((udLen+horLen)*1.05/pl),sheets=C(area*lay*(1+wp/100)/(1.2*bh/1000));
+ const pv=hs?'CD':'CW',pu=hs?'UD':'UW';
+ info.push(hs?`Обшивка на стени: вертикални CD през ${sp} мм в UD водачи, закрепени към стената с директни окачвачи през ≈1,25 м (червените точки).`:`Свободностояща обшивка: CW през ${sp} мм в UW водачи, без връзка със стената — остава място за инсталации и изолация. Над ~2,6 м с CW 50 е нужна междинна опора към стената.`);
+ if(sel.length>1)info.push('В ъглите между две обшивани стени профилът е общ — слага се само на едната стена (икономия).');
+ if(P.noTop)info.push('Горният водач на стените е UD профилът на тавана (пунктир) — не се купува втори.');
+ info.push('Около врати и прозорци се слага профил от всяка страна и хоризонтален водач отгоре (и отдолу при прозорец). Веригите са в см.');
+ if(H>pl)info.push(`Височината е над ${pl/1000} м — профилите се снаждат (червените зони).`);
+ const rows=[['Гипсокартон 12,5 мм',sheets,'бр.',`1200×${bh} · ${fmt(area*lay,1)} м² + ${fmt(wp,0)}%`],
+  [pv+' профил',vN,`бр. × ${pl/1000} м`,`${walls.reduce((a,w)=>a+w.segs.length,0)} вертикални на стените`],
+  [pu+' профил',udN,`бр. × ${pl/1000} м`,`${fmt((udLen+horLen)/1000,1)} м по пода, тавана и около отворите`]];
+ if(hs)rows.push(['Директен окачвач',hg,'бр.','през ≈1,25 м по височина'],['Дюбели 8×60 за окачвачи',hg*2,'бр.','по 2 за окачвач'],['Винтове LN 3,5×9 (метал-метал)',hg*2,'бр.','']);
+ rows.push(['Уплътнителна лента',C(udLen/1000*1.05),'м','под водачите'],['Дюбели 6×40 за водачи',C(udLen/600),'бр.','през 60 см'],...scrRows(area,lay));
+ if(winPer)rows.push(['Ъглова перфорирана лайсна',C(winPer/2500),'бр. × 2,5 м','ръбове на прозорците']);
+ if(P.wool)rows.push(['Минерална вата 50 мм',C(area*1.05*10)/10,'м²','зад обшивката']);
+ rows.push(...finRows(area,lay));
+ return{name:'Стени',rows,warn,info,sheets,prof:vN+udN,profTxt:`${vN} ${pv} + ${udN} ${pu}`,area:area*lay,views:[['k','Конструкция'],['a','Плоскости']],
+ leg:vw=>vw==='k'?LG.cw+LG.uw+(hs?LG.hg:'')+(H>pl?LG.spl:''):LG.gk,
+ draw(fig,view){const nar=walls.length>2&&((fig.clientWidth||640)<600||walls.reduce((a,w)=>a+w.S,0)/H>5),gap=300;
+  const RW=nar?[walls.slice(0,2),walls.slice(2)]:[walls];
+  const totW=Math.max(...RW.map(r=>r.reduce((a,w)=>a+w.S,0)+gap*(r.length-1))),vg=H*0.34,totH=RW.length*H+(RW.length-1)*vg;
+  const f=frame(fig,totW,totH,nar?520:320,{b:view==='k'?40:22});const k=f.k,o={s:''};
+  RW.forEach((rw,ri)=>{let ox=0;const oy=ri*(H+vg);rw.forEach(w=>{const X=x=>f.X(ox+x),Y=y=>f.Y(oy+H-y);
+   const pw=Math.max(50*k,3.5),uT=Math.max(40*k,4);
+   if(view==='k'){o.s+=R(X(0),Y(H),w.S*k,H*k,'bgw');
+    w.o.forEach(q=>o.s+=R(X(q[0]),Y(q[1]+q[3]),q[2]*k,q[3]*k,'open'));
+    w.segs.forEach(([x,a,c])=>{const xx=x<=0?X(0):x>=w.S?X(w.S)-pw:X(x)-pw/2;o.s+=R(xx,Y(c),pw,(c-a)*k,'cw');if(c-a>pl)o.s+=R(xx,Y(a+pl),pw,500*k,'spl');
+     if(hs){const n=C((c-a)/1250);for(let i=0;i<n;i++)o.s+=Cc(xx+pw/2,Y(a+(i+.5)*(c-a)/n),3,'hg')}});
+    w.hor.forEach(([a,c,y])=>o.s+=R(X(Math.max(0,a)),Y(y)-uT/2,(Math.min(w.S,c)-Math.max(0,a))*k,uT,'uw'));
+    if(!P.noTop)o.s+=R(X(0),Y(H),w.S*k,uT,'uw');else o.s+=R(X(0),Y(H),w.S*k,uT,'','fill:none;stroke:var(--uw);stroke-dasharray:5 4');
+    let xs=0;w.o.filter(q=>q[1]<=0).sort((a,c)=>a[0]-c[0]).forEach(q=>{o.s+=R(X(xs),Y(0)-uT,(q[0]-xs)*k,uT,'uw');xs=q[0]+q[2]});o.s+=R(X(xs),Y(0)-uT,(w.S-xs)*k,uT,'uw');
+    o.s+=chainH(f,w.tk.map(x=>x+ox),Y(0)+24);
+   }else{boardsCol(o,X,Y,w.S,H,bh,k,0);
+    w.o.forEach(q=>o.s+=R(X(q[0]),Y(q[1]+q[3]),q[2]*k,q[3]*k,'open'));
+    w.segs.forEach(([x,a,c])=>o.s+=Ln(X(x),Y(a),X(x),Y(c),'prf'))}
+   w.o.forEach(q=>{if(q[2]*k>40)o.s+=T(X(q[0]+q[2]/2),Y(q[1]+q[3]/2)+4,q[1]>0?'прозорец':'врата','lb')});
+   o.s+=R(X(0),Y(H),w.S*k,H*k,'wall')+T(X(w.S/2),Y(H)-8,`Стена ${w.n} · ${m(w.S)}`,'lb');ox+=w.S+gap})});
+  o.s+=dV(f.ox-18,f.Y(0),f.Y(H),m(H));
+  fig.innerHTML=svg(f,o.s)}};
+}
+
+function ceiling(P){const{L,W,sp,pl,bh,lay,wp,two}=P;const warn=[],info=[];
+ const per=2*(L+W),udN=C(per*1.05/pl);
+ const mx=[];for(let x=sp;x<L-100;x+=sp)mx.push(x);
+ const cy=[];if(two)for(let y=500;y<W;y+=1000)cy.push(Math.min(y,W-150));
+ const pcsCD=len=>len<=pl?1:C(len/pl);
+ const mN=mx.length*pcsCD(W),cN=cy.length*pcsCD(L),ext=mx.length*(pcsCD(W)-1)+cy.length*(pcsCD(L)-1);
+ const hgPos=[];if(two)cy.forEach(y=>{for(let x=450;x<L;x+=900)hgPos.push([x,y])});else mx.forEach(x=>{for(let y=450;y<W;y+=900)hgPos.push([x,y])});
+ const hg=hgPos.length,cross=two?cy.length*mx.length:0;
+ const area=L*W/1e6,sheets=C(area*lay*(1+wp/100)/(1.2*bh/1000));
+ info.push(two?`Таван: носещи CD през 1000 мм (тъмни) на анкерни окачвачи през 900 мм; монтажни CD през ${sp} мм (сини) отдолу, с кръстати връзки (оранжеви).`:`Таван: монтажни CD през ${sp} мм на директни окачвачи през 900 мм.`);
+ info.push('Плоскостите на тавана се редят с дългата страна напречно на монтажните CD; челните фуги се разминават и падат върху профил.');
+ if(sp>500)warn.push('За таван препоръчително разстояние между монтажните CD е 400–500 мм.');
+ const rows=[['Гипсокартон 12,5 мм',sheets,'бр.',`1200×${bh} · ${fmt(area*lay,1)} м² + ${fmt(wp,0)}%`],
+  ['UD профил',udN,`бр. × ${pl/1000} м`,`${fmt(per/1000,1)} м периметър на тавана`],
+  ['CD профил',mN+cN,`бр. × ${pl/1000} м`,two?`${mx.length} монтажни + ${cy.length} носещи на тавана`:`${mx.length} на тавана`]];
+ if(ext)rows.push(['Удължител за CD',ext,'бр.','при снаждане']);
+ rows.push([two?'Анкерен окачвач + тел с ухо':'Директен окачвач',hg,'бр.','на тавана през ≈90 см']);
+ if(two)rows.push(['Кръстата връзка CD/CD',cross,'бр.','на всяко пресичане']);
+ rows.push(['Метален анкер за таван 6×40',hg,'бр.','по 1 за окачвач'],['Дюбели 6×40 за водачи',C(per/600),'бр.','през 60 см'],
+  ['Винтове LN 3,5×9 (метал-метал)',mx.length*2+(two?0:hg*2),'бр.',''],['Уплътнителна лента',C(per/1000*1.05),'м','под водачите'],...scrRows(area,lay),...finRows(area,lay));
+ return{name:'Таван',rows,warn,info,sheets,prof:mN+cN+udN,profTxt:`${mN+cN} CD + ${udN} UD`,area:area*lay,views:[['k','Конструкция'],['a','Плоскости']],
+ leg:vw=>vw==='k'?LG.cw+(two?LG.uw+LG.ua:LG.uw)+LG.hg+(W>pl||(two&&L>pl)?LG.spl:''):LG.gk,
+ draw(fig,view){const f=frame(fig,L,W,460,{b:view==='k'?40:14,r:view==='k'&&two?44:14});let b='';const k=f.k;
+  if(view==='k'){b+=R(f.X(0),f.Y(0),L*k,W*k,'bgw');
+   const cdW=Math.max(60*k,4),cdc=Math.max(60*k,6);
+   cy.forEach((y,i)=>{b+=R(f.X(0),f.Y(y)-cdc/2,L*k,cdc,'uw');if(L>pl)b+=R(f.X(i%2?pl-1000:pl)-3,f.Y(y)-cdc/2-2,6,cdc+4,'spl')});
+   mx.forEach((x,i)=>{b+=R(f.X(x)-cdW/2,f.Y(0),cdW,W*k,'cw');if(W>pl)b+=R(f.X(x)-cdW/2-2,f.Y(i%2?W-pl:pl)-3,cdW+4,6,'spl')});
+   if(two)cy.forEach(y=>mx.forEach(x=>b+=R(f.X(x)-4,f.Y(y)-4,8,8,'xx')));
+   hgPos.forEach(([x,y])=>b+=Cc(f.X(x),f.Y(y),4.5,'hg'));
+   b+=R(f.X(0)+3,f.Y(0)+3,L*k-6,W*k-6,'udb');
+   if(two&&cy.length)b+=T(f.X(0)+10,f.Y(cy[0])-cdc/2-5,'носещ CD','lb','start');
+   if(mx.length)b+=T(f.X(mx[0])+cdW/2+12,f.Y(W/2),'монтажен CD','lb','middle',1);
+   b+=chainH(f,[0,...mx,L],f.Y(W)+26);
+   if(two)b+=chainV(f,[0,...cy,W],f.X(L)+18);
+  }else{const off=Math.max(sp,Math.round(bh/2/sp)*sp);
+   for(let r=0,y=0;y<W-0.5;y+=1200,r++){const h=Math.min(1200,W-y);let x=r%2?-(bh-off):0;
+    for(;x<L-0.5;x+=bh){const a=Math.max(0,x),e=Math.min(L,x+bh);b+=R(f.X(a),f.Y(y),(e-a)*k,h*k,e-a<bh-0.5||h<1199?'gkc':'gk')}}
+   mx.forEach(x=>b+=Ln(f.X(x),f.Y(0),f.X(x),f.Y(W),'prf'))}
+  b+=R(f.X(0),f.Y(0),L*k,W*k,'wall')+T(f.X(L/2),f.oy-24,'Таван — изглед отдолу','lb');
+  b+=dH(f.X(0),f.X(L),f.oy-8,m(L))+dV(f.ox-18,f.Y(0),f.Y(W),m(W));
+  fig.innerHTML=svg(f,b)}};
+}
+
+function calcD(){
+ const mode=s('dMode'),L=v('dL')*1000,W=v('dW')*1000,H=v('dH')*1000,pl=+s('dPL'),bh=+s('dBH'),lay=+s('dLay'),wp=v('dWaste'),wool=s('dWool')==='1';
+ const parts=[];
+ if(mode==='w'){if(L<300||H<300)return null;parts.push(partition({L,H,sp:+s('dS'),pl,bh,lay,wp,sides:+s('dSides'),dw:v('dDW')*1000,dh:v('dDH')*1000,dx:v('dDX')*1000,wool}))}
+ if(mode==='l'||mode==='r'){if(L<300||W<300||H<300)return null;const sel=s('dSel').split('').map(Number);
+  const dw=v('dDW')*1000,dh=Math.min(v('dDH')*1000,H),dx=v('dDX')*1000,ww=v('dWW')*1000,wn=+s('dWn'),wh=v('dWH')*1000,wsl=v('dWS')*1000,wx=v('dWX')*1000;
+  const ops=n=>{const o=[];if(n===1&&dw>0)o.push([dx,0,dw,dh]);if(n===wn&&ww>0&&wsl<H)o.push([wx,wsl,ww,Math.min(wh,H-wsl)]);return o};
+  parts.push(lining({L,W,H,sp:+s('dS'),pl,bh,lay,wp,sys:s('dLin'),sel,ops,wool,noTop:mode==='r'}))}
+ if(mode==='c'||mode==='r'){if(L<300||W<300)return null;parts.push(ceiling({L,W,sp:+s('dSc'),pl,bh,lay,wp,two:s('dSys')==='2'}))}
+ const views=mode==='r'?[['k','Конструкция'],['a','Плоскости']]:parts[0].views;
+ const view=views.some(x=>x[0]===st.dView)?st.dView:'k';
+ $('#V-d').innerHTML=views.map(([k,l])=>`<button type="button" data-view="${k}" aria-pressed="${k===view}">${l}</button>`).join('');
+ const pre=(p,x)=>parts.length>1?p.name+': '+x:x;
+ const sheets=parts.reduce((a,p)=>a+p.sheets,0),prof=parts.reduce((a,p)=>a+p.prof,0),area=parts.reduce((a,p)=>a+p.area,0);
+ $('#L-d').innerHTML=[...new Set(parts.flatMap(p=>p.leg(view).match(/<span>.*?<\/span>/g)||[]))].join('');
+ return{key:[sheets,'плоскости',`${fmt(area,1)} м² обшивка`],key2:[prof,'профила',parts.map(p=>p.profTxt).join(' · ')],
+  rows:(()=>{const all=mergeRows(parts.map(p=>p.rows));if(s('dDet')==='f')return all;const MIN=/Уплътнителна лента|^Грунд|LN 3,5|Ъгъл за UA|Ъглова перфорирана|Удължител/;const r=all.filter(x=>!MIN.test(x[0]));if(r.length<all.length)parts[0].info.push('Показано е само основното. Дребните материали (уплътнителна лента, грунд, винтове метал-метал, удължители, ъгли) са скрити — избери „Подробна“, за да ги видиш.');return r})(),warn:parts.flatMap(p=>p.warn.map(x=>pre(p,x))),info:parts.flatMap(p=>p.info),
+  title:{w:'Преградна стена',l:'Обшивка на стени',c:'Окачен таван',r:'Стени и таван'}[mode],
+  printViews:parts.flatMap(p=>p.views.map(([vv,l])=>[p,vv,(parts.length>1?p.name+' — ':'')+l])),
+  draw(){parts[0].draw($('#G-d'),view);const g2=$('#G-d2');if(parts[1]){g2.hidden=false;parts[1].draw(g2,view)}else{g2.hidden=true;g2.innerHTML=''}}};
+}
+
+/* ---------- БАНЯ ---------- */
+function x0of(S,t,j,mode){const p=t+j;if(mode!=='c')return 0;const o=c=>{let x=c-C(c/p)*p;if(x+t<=0.5)x+=p;return x};const a=o(S/2),b=o(S/2-t/2);return a>=b?a:b}
+function seg0(S,t,j,x0){const p=t+j,out=[];for(let x=x0;x<S-0.5;x+=p){const a=Math.max(x,0),e=Math.min(x+t,S);if(e-a>0.5)out.push([a,e-a])}return out}
+const seg=(S,t,j,mode)=>seg0(S,t,j,x0of(S,t,j,mode));
+function calcB(){
+ const L=v('bL')*1000,W=v('bW')*1000,H=v('bH')*1000;if(L<300||W<300||H<100)return null;
+ const fa=v('bFa')*10,fb=v('bFb')*10,tL=v('bTl')*10,tS=v('bTs')*10,tor=s('bTor'),ta=tor==='v'?tS:tL,tb=tor==='v'?tL:tS,tlay=s('bTlay'),j=v('bJ'),mode=s('bStart'),wp=v('bWaste'),lay=s('bFlay');
+ if(!fa||!fb||!ta||!tb)return null;
+ const col={w:[s('cW1'),s('cW2'),s('cW3')],f:[s('cF1'),s('cF2')],fr:s('cFr'),g:s('cG')};
+ const warn=[],info=[];const diag=lay[0]==='d',chess=lay==='c'||lay==='dc';
+ const O=obsInfo(st.obsb,L,W,warn);
+ const FXR=st.fixb.map(o=>{const n=+o.wall,fw2=(+o.w||0)*10,fd=(+o.d||0)*10,off=(+o.x||0)*1000,S=n%2?L:W;let x,y,w,h;
+  if(n===1){x=off;y=0;w=fw2;h=fd}else if(n===3){x=off;y=W-fd;w=fw2;h=fd}else if(n===2){x=L-fd;y=off;w=fd;h=fw2}else{x=0;y=off;w=fd;h=fw2}
+  if(off+fw2>S+1||fd>(n%2?W:L))warn.push(`${FX[o.t].n}: не се побира на стена ${n}.`);return{t:o.t,n,fw:fw2,fd,off,x,y,w,h}}).filter(F=>F.fw>0&&F.fd>0);
+ FXR.forEach((a,i)=>FXR.slice(i+1).forEach(c=>{if(a.x<c.x+c.w-1&&a.x+a.w>c.x+1&&a.y<c.y+c.h-1&&a.y+a.h>c.y+1)warn.push(`${FX[a.t].n} и ${FX[c.t].n} се застъпват — премести ги.`)}));
+ /* под */
+ const fp=[];
+ if(!diag){const ys=seg(W,fb,j,mode),bx=x0of(L,fa,j,mode);
+  ys.forEach(([y,h],r)=>{seg0(L,fa,j,lay==='o'&&r%2?bx-(fa+j)/2:bx).forEach(([x,w],c)=>{if(inObs(O.rects,x,y,w,h))return;
+   fp.push({x,y,w,h,c:chess?(r+c)%2:0,cut:w<fa-.5||h<fb-.5||hitObs(O.rects,x,y,w,h),nar:w<fa/3-.5||h<fb/3-.5})})});
+  const nx=fp.filter(p=>p.w<fa/3-.5),ny=fp.filter(p=>p.h<fb/3-.5);
+  const tip=mode==='c'?'смени размера на плочката или подредбата':'опитай „Центрирано“';
+  if(nx.length)warn.push(`Под: ивици от ${fmt(Math.min(...nx.map(p=>p.w))/10,1)} см по дължината — ${tip}.`);
+  if(ny.length)warn.push(`Под: ивици от ${fmt(Math.min(...ny.map(p=>p.h))/10,1)} см по ширината — ${tip}.`);
+ }else info.push('Диагонал: започни от центъра на стаята по две опънати връви под 45°; фирата е по-голяма (≈15%).');
+ const Af=L*W/1e6-O.area,tf=fa*fb/1e6;
+ const fCnt=[0,0];fp.forEach(p=>fCnt[p.c]++);
+ const fArea=chess?[Af/2,Af/2]:[Af,0];
+ const fN=[0,1].map(i=>fArea[i]>0?Math.max(C(fArea[i]*(1+wp/100)/tf),fCnt[i]):0);
+ /* стени */
+ const walls=[[1,L],[2,W],[3,L],[4,W]];
+ const dw=v('bDW')*1000,dh=Math.min(v('bDH')*1000,H),dx=v('bDX')*1000;
+ const ww=v('bWW')*1000,wn=+s('bWn'),ws=v('bWS')*1000,wh=v('bWH')*1000,wx=v('bWX')*1000;
+ const ops=n=>{const o=[];if(n===1&&dw>0)o.push([dx,0,dw,dh]);if(n===wn&&ww>0&&ws<H)o.push([wx,ws,ww,Math.min(wh,H-ws)]);return o};
+ const z0=Math.min(Math.max(v('bSplit')*1000,0),H),fl2=v('bFrL')*10||300,frOn=s('bFr')==='1',frO=s('bFrO'),fr=frOn&&frO.includes('h'),frV=frOn&&frO.includes('v'),fw=Math.max(v('bFrH')*10,1),vw=s('bFrVw'),vx=v('bFrVx')*1000,fh=fr?Math.min(v('bFrH')*10,H-z0):0,fl=v('bFrL')*10||300;
+ const hz=+s('bHz'),z1b=Math.min(Math.max(v('bSplit2')*1000,0),H),zc=[s('bZc1'),s('bZc2'),s('bZc3')].map(Number),accN=+s('bAcc'),accC=+s('bAccC'),vn=+s('bVn');
+ const split=true;
+ const wCnt=[0,0,0],wAr=[0,0,0];let frN=0,frLen=0;
+ const ovl=(o,y0,y1)=>o[2]*Math.max(0,Math.min(o[1]+o[3],y1)-Math.max(o[1],y0));
+ const pW=s('bPer')==='1',WC=n=>st.bw[Math.max(0,n-1)];
+ const zonesFor=n=>{const a=Math.min(z0+fh,H),hz2=pW?+WC(n).hz:hz,zc2=pW?[+WC(n).c0,+WC(n).c1,+WC(n).c2]:zc;if(hz2===1&&!fr)return[[0,H,zc2[0]]];if(hz2===1)return[[0,z0,zc2[0]],[a,H,zc2[0]]];if(hz2===2||z1b<=a+50)return[[0,z0,zc2[0]],[a,H,zc2[2]]];return[[0,z0,zc2[0]],[a,z1b,zc2[1]],[z1b,H,zc2[2]]]};
+ const bands=n=>{const r=[];if(pW){const q=WC(n);for(let i=0;i<+q.bn;i++){const x0=(+q['b'+i+'x']||0)*1000;r.push([x0,x0+(+q['b'+i+'w']||0)*1000,+q['b'+i+'c']])}return r}for(let i=1;i<=vn;i++){const bw2=s('bV'+i+'w'),S=n%2?L:W,wd=v('bV'+i+'s')*1000,x0=bw2==='a'?S/2-wd/2:v('bV'+i+'x')*1000;if(bw2==='a'||+bw2===n)r.push([x0,x0+wd,+s('bV'+i+'c')])}return r};
+ const WL=walls.map(([n,S])=>{const o=ops(n);o.forEach(q=>{if(q[0]+q[2]>S+1)warn.push(`Отвор на стена ${n} излиза извън стената.`)});
+  const cx=seg(S,ta,j,mode),pcs=[],bx=x0of(S,ta,j,mode),pt=ta+j;
+  const rowX=r=>tlay==='s'?cx:seg0(S,ta,j,bx-(tlay==='o'?(r%2)*pt/2:(r%3)*pt/3));
+  const bd=bands(n);
+  const vs=frV&&(vw==='a'||+vw===n)?[vw==='a'?S/2-fw/2:Math.max(0,Math.min(vx,S-fw))]:[];
+  zonesFor(n).forEach(([y0,y1,ci])=>{if(y1-y0<0.5)return;const ry=seg0(y1-y0,tb,j,0),lr=ry[ry.length-1];
+   if(lr&&lr[1]<tb/3-.5)warn.push(`Горният ред ${y0>0?'над '+(fr?'фриза':'разделението'):'на стените'} е само ${fmt(lr[1]/10,1)} см — промени височината.`);
+   ry.forEach(([yy,h],r)=>rowX(r).forEach(([x,w])=>{const y=y0+yy;if(o.some(q=>x>=q[0]-.5&&x+w<=q[0]+q[2]+.5&&y>=q[1]-.5&&y+h<=q[1]+q[3]+.5))return;
+    if(vs.some(a=>x>=a-.5&&x+w<=a+fw+.5))return;const hv=vs.some(a=>x<a+fw&&x+w>a);
+    let c=!pW&&accN===n?accC:ci;const xm=x+w/2;bd.forEach(([a,b2,cc])=>{if(xm>=a&&xm<=b2)c=cc});
+    wCnt[c]++;wAr[c]+=w*h/1e6;pcs.push({x,y,w,h,c,cut:w<ta-.5||h<tb-.5||hv,nar:w<ta/3-.5||h<tb/3-.5})}))});
+  vs.forEach(a=>{const len=H-fh-o.reduce((s2,q)=>s2+(q[0]<a+fw&&q[0]+q[2]>a?q[3]:0),0);frLen+=len;frN+=C(len/(fl+j)-1e-9)});
+  let band=null;if(fr&&fh>0){band=[z0,z0+fh];const len=S-o.reduce((a,q)=>a+(q[1]<z0+fh&&q[1]+q[3]>z0?q[2]:0),0);frLen+=len;frN+=C(len/(fl+j)-1e-9)}
+  const mn=Math.min(...cx.map(p=>p[1]));if(mn<ta/3-.5)warn.push(`Стена ${n}: крайни ивици от ${fmt(mn/10,1)} см.`);
+  return{n,S,cx,pcs,o,band,vs}});
+ if(O.exp>0){zonesFor(0).forEach(([y0,y1,ci])=>wAr[ci]+=O.exp*(y1-y0)/1000);if(fr){frLen+=O.exp*1000;frN+=C(O.exp*1000/(fl+j))}
+  info.push(`Колони и комини: +${fmt(O.exp,2)} м открити стени облицовани до ${fmt(H/1000,2)} м (не са показани на развивката), ${O.outer} външни ъгъла.`)}
+ if(split){[[z0,fr?'фриза':'граница 1'],...(hz===3?[[z1b,'граница 2']]:[])].forEach(([zz,nm2])=>{const p=tb+j,kk=Math.floor(zz/p),opts=[kk,kk+1].filter(x=>x>=1&&x*p<H).map(x=>fmt(x*p/1000,2)+' м ('+x+(x===1?' ред':' реда')+')');
+  if(Math.abs(zz-Math.round(zz/p)*p)>2&&opts.length)info.push(`За цели плочки под ${nm2} я постави на ${opts.join(' или ')}.`)})}
+ if(false){const p=tb+j,kk=Math.floor(z0/p),opts=[kk,kk+1].filter(x=>x>=1&&x*p<H).map(x=>fmt(x*p/1000,2)+' м ('+x+(x===1?' ред':' реда')+')');
+  if(Math.abs(z0-Math.round(z0/p)*p)>2&&opts.length)info.push(`За цели плочки под ${fr?'фриза':'разделението'} го постави на ${opts.join(' или ')}.`)}
+ const tw=ta*tb/1e6,wN=[0,1,2].map(i=>wAr[i]>0.01?Math.max(C(wAr[i]*(1+wp/100)/tw),wCnt[i]):0),Aw=wAr[0]+wAr[1]+wAr[2];
+ const fBox=fN.map(n=>n?C(n*tf/(v('bFbox')||1)-1e-9):0),wBox=wN.map(n=>n?C(n*tw/(v('bTbox')||1)-1e-9):0);
+ if(tlay!=='s')info.push(`Стени: ${tlay==='o'?'тухлена подредба — всеки ред е изместен с половин плочка':'всеки ред е изместен с 1/3 плочка'}; при плочки над 60 см отместването да е до 1/3 заради огъването им.`);
+ const frPcs=C(frN*(1+wp/100));
+ /* сифон */
+ const dr=s('bDr');let drRow=null,drG=null;
+ if(dr==='p'){const px=v('bDrX')*1000,py=v('bDrY')*1000;
+  if(px>L||py>W)warn.push('Сифонът е извън стаята — провери разстоянията.');
+  const dmax=Math.max(...[[0,0],[L,0],[0,W],[L,W]].map(([a,c])=>Math.hypot(a-px,c-py)));
+  info.push(`Точков сифон: при наклон 1,5% най-далечният ъгъл е ≈ ${fmt(dmax*0.015,0)} мм по-високо от сифона. Плочките се режат „на плик“ по пунктираните линии.`);
+  if(Math.max(fa,fb)>=600)warn.push('За плочки 60 см и по-големи с точков сифон рязането „на плик“ е трудно — помисли за линеен сифон.');
+  drRow=['Точков подов сифон 15×15 см',1,'бр.','с хидроизолационен фланец'];drG={t:'p',px,py}}
+ else if(dr==='l'){const n=+s('bDrWall'),ll=v('bDrL')*10,o=v('bDrO')*1000,S=n%2?L:W,dep=n%2?W:L;
+  if(o+ll>S)warn.push(`Линейният сифон излиза извън стена ${n}.`);
+  info.push(`Линеен сифон до стена ${n}: подът пада в една равнина; на ${fmt(Math.min(dep,1200)/1000,1)} м от сифона разликата е ≈ ${fmt(Math.min(dep,1200)*0.015,0)} мм. Плочките остават цели — подходящо за едър формат.`);
+  drRow=[`Линеен сифон ${fmt(ll/10,0)} см`,1,'бр.','с хидроизолационен фланец'];drG={t:'l',n,ll,o}}
+ const glue=t=>t<=200?3:t<=400?4:t<=600?5.5:7;
+ const grout=(a,b)=>(a+b)/(a*b)*j*8*1.6;
+ const per=2*(L+W)/1000,sh=v('bShow');
+ const hyA=Af+(per+O.exp)*0.2+sh*2,glueKg=Af*glue(Math.max(fa,fb))+Aw*glue(Math.max(ta,tb))+frLen/1000*0.1;
+ info.push('Стените обикновено се започват от втория ред с лата по нивелир, а най-долният ред се реже последен.');
+ const two=x=>x[1]>0;
+ const rows=[
+  [chess?'Плочки за под – цвят А':'Плочки за под',fBox[0],'кашона',`${fN[0]} бр. ${fa/10}×${fb/10} см`,col.f[0]],
+  ['Плочки за под – цвят Б',fBox[1],'кашона',`${fN[1]} бр. ${fa/10}×${fb/10} см`,col.f[1]],
+  ...[0,1,2].map(i=>[wN.filter(x=>x>0).length>1?'Плочки за стени – цвят '+'ABC'[i]:'Плочки за стени',wBox[i],'кашона',`${wN[i]} бр. ${ta/10}×${tb/10} см (${tor==='v'?'верт.':'хор.'}) · ${fmt(wAr[i],1)} м²`,col.w[i]]),
+  ['Фриз (бордюр)',frOn?frPcs:0,'бр.',`${fmt(fw/10,1)}×${fl/10} см · ${fmt(frLen/1000,1)} м`+(frV?(fr?' (хор. + верт.)':' (вертикален)'):''),col.fr]];
+ if(drRow)rows.push(drRow);
+ const fxc={};FXR.forEach(F=>{const kk=`${FX[F.t].n} ${F.fw/10}×${F.fd/10} см`;fxc[kk]=(fxc[kk]||0)+1});Object.entries(fxc).forEach(([kk,c])=>rows.push([kk,c,'бр.','санитария']));
+ rows.push(['Ъглов профил за външни ъгли',O.outer?O.outer*C(H/2500):0,'бр. × 2,5 м','колони и комини'],
+  ['Лепило за плочки (C2TE)',C(glueKg/25),'чувала × 25 кг',`≈${fmt(glueKg,0)} кг`],
+  ['Фугираща смес',C(Af*grout(fa,fb)+Aw*grout(ta,tb)),'кг',`фуга ${fmt(j,1)} мм`,col.g],
+  ['Хидроизолация (2 слоя)',C(hyA*1.5),'кг',`${fmt(hyA,1)} м²: под + 20 см по стените${sh?` + душ зона ${fmt(sh,1)} м × 2 м`:''}`],
+  ['Хидроизолационна лента',C(per+O.exp+(sh?4:0)),'м','ъгли под/стена'+(sh?' и в душа':'')],
+  ['Хидроизолационни маншети',2,'бр.','сифон и тръби'],
+  ['Грунд',C((Af+Aw)*0.2),'л','≈0,2 л/м²'],
+  ['Санитарен силикон',C((per+4*H/1000)/10),'туби','ъгли и около санитария'],
+  ['Кръстчета / нивелираща система',C((fN[0]+fN[1]+wN[0]+wN[1]+wN[2])*2/100)*100,'бр.','≈2 бр. на плочка']);
+ const tb2=fBox[0]+fBox[1]+wBox[0]+wBox[1]+wBox[2],wbs=wBox[0]+wBox[1]+wBox[2];
+ return{key:[tb2,'кашона плочки',`${fBox[0]+fBox[1]} за пода + ${wbs} за стените`],key2:frOn?[frPcs,'фриза',`${fmt(frLen/1000,1)} м бордюр`]:[C(glueKg/25),'чувала лепило',`${fmt(Af+Aw,1)} м² облицовка`],rows,warn:[...new Set(warn)],info,
+
+ prompt(pv=st.vb){const nm=colorName,lt={s:'straight grid',c:'checkerboard',o:'running bond (brick) pattern',d:'diagonal 45°',dc:'diagonal checkerboard'}[lay];
+  const wDesc=n=>{const Z=zonesFor(n),bd=bands(n);let t2=Z.length===1?`${nm(col.w[Z[0][2]])} tiles`:Z.map(([a,b2,c2],i)=>`${['lower','middle','upper'][Z.length===2&&i===1?2:i]} part ${i===0?`up to ${en(b2/1000,2)} m `:''}in ${nm(col.w[c2])}`).join(', ');
+   if(!pW&&accN===n)t2=`fully in ${nm(col.w[accC])} tiles (accent wall)`;bd.forEach(([a,b2,c2])=>t2+=`, a ${en((b2-a)/1000,2)} m wide vertical strip of ${nm(col.w[c2])} tiles`);return t2};
+  const same=[2,3,4].every(n=>wDesc(n)===wDesc(1));let walls=same?wDesc(1):[1,2,3,4].map(n=>`wall ${n}: ${wDesc(n)}`).join('; ');
+  const frz=frOn?` Decorative ${en(fw/10,1)} cm listello border in ${nm(col.fr)}${fr?`, running horizontally at ${en(z0/1000,2)} m height`:''}${frV?`${fr?' and':','} as a vertical strip from floor to top on ${vw==='a'?'every wall':'one wall'}`:''}.`:'';
+  const drn=dr==='p'?' Square point floor drain in the shower area.':dr==='l'?` Linear shower drain ${en(v('bDrL'),0)} cm along a wall, walk-in shower.`:'';
+  return `Photorealistic interior render of a bathroom ${en(L/1000,2)} x ${en(W/1000,2)} m, wall tiles up to ${en(H/1000,2)} m. Floor: ${fa/10}x${fb/10} cm tiles in ${lt}, ${nm(col.f[0])}${chess?` and ${nm(col.f[1])}`:''}, ${en(j,1)} mm grout in ${nm(col.g)}. Walls: ${ta/10}x${tb/10} cm tiles laid ${tor==='v'?'vertically':'horizontally'}${tlay==='o'?' in running bond':tlay==='t'?' with 1/3 offset':' stacked'}, ${walls}.${frz}${drn}${ww>0?' Small window with daylight.':''} ${FXR.length?'Fixtures: '+FXR.map(F=>`${FX[F.t].e} ${F.fw/10}x${F.fd/10} cm against wall ${F.n}`).join(', ')+', modern minimalist style.':'Modern minimalist fixtures.'} ${camFor(pv,n=>n%2?L:W,n=>[wDesc(n),...FXR.filter(F=>F.n===n).map(F=>FX[F.t].e),...ops(n).map(o=>o[1]>0?'a window':'the door')].join(', '))}, soft natural light, architectural interior photography, 4k.`},
+ draw(){const vw=curView('b'),A=vw==='all';showFigs('b',vw);
+  if(A||vw==='plan')this.drawPlan();if(A||vw==='3d')this.draw3d();
+  if(A||vw==='top')render3d($('#G-b4'),this.scene(),'top',520);if(A||vw==='walls')renderWalls($('#G-b5'),this.scene(),'Баня')},
+ scene(){const Hr=Math.max(H+200,2600),fI=[];
+  if(diag){const cx=L/2,cy=W/2,D=Math.hypot(L,W),pa=fa+j,pb=fb+j,nx=C(D/2/pa)+1,ny=C(D/2/pb)+1,an=Math.PI/4;
+   for(let r=-ny;r<=ny;r++)for(let c=-nx;c<=nx;c++){const x=cx+c*pa,y=cy+r*pb,ce=rotP(x+fa/2,y+fb/2,cx,cy,an);if(ce[0]<-fa||ce[0]>L+fa||ce[1]<-fb||ce[1]>W+fb)continue;fI.push({p:rq(x,y,fa,fb,cx,cy,an),c:chess&&(r+c)&1?col.f[1]:col.f[0]})}}
+  else fp.forEach(p=>fI.push({p:fr4(p.x,p.y,p.x+p.w,p.y+p.h),c:col.f[p.c]}));
+  if(drG&&drG.t==='p')fI.push({p:fr4(drG.px-75,drG.py-75,drG.px+75,drG.py+75),c:'#9aa0a4'});
+  if(drG&&drG.t==='l'){const n=drG.n,t2=70,r=n===1?[drG.o,50,drG.ll,t2]:n===3?[drG.o,W-50-t2,drG.ll,t2]:n===2?[L-50-t2,drG.o,t2,drG.ll]:[50,drG.o,t2,drG.ll];fI.push({p:fr4(r[0],r[1],r[0]+r[2],r[1]+r[3]),c:'#9aa0a4'})}
+  const planes={f:{base:fr4(0,0,L,W),c:col.g,items:fI}};
+  WL.forEach(w=>{const n=w.n,S=w.S,it=[{p:wr4(n,0,0,S,H,L,W),c:col.g}],q=(u0,z0,u1,z1,c)=>it.push({p:wr4(n,u0,z0,u1,z1,L,W),c});
+   w.pcs.forEach(p=>q(p.x,p.y,p.x+p.w,p.y+p.h,col.w[p.c]));
+   w.vs.forEach(a=>seg0(H,fl2,j,0).forEach(([y,hh])=>q(a,y,a+fw,y+hh,col.fr)));
+   if(w.band)seg(S,fl2,j,mode).forEach(([x,ww2])=>q(x,w.band[0],x+ww2,w.band[1],col.fr));
+   w.o.forEach(o=>{if(o[1]<=0){q(o[0],0,o[0]+o[2],o[3],'#8a6f55');q(o[0]+o[2]*.82,o[3]*.47,o[0]+o[2]*.9,o[3]*.5,'#d0d0d0')}else{q(o[0],o[1],o[0]+o[2],o[1]+o[3],'#eef1f2');q(o[0]+40,o[1]+40,o[0]+o[2]-40,o[1]+o[3]-40,'#bfe0ef')}});
+   FXR.filter(F=>F.t==='m'&&F.n===n).forEach(F=>q(F.off+F.fw*.12,1150,F.off+F.fw*.88,1850,'#cfe1e8'));
+   planes['w'+n]={base:wr4(n,0,0,S,Hr,L,W),c:'#f2f0eb',lf:WLF[n],items:it}});
+  const objs=O.rects.map(o=>mkObj(boxF(o.x,o.y,o.x+o.w,o.y+o.d,0,Hr,col.w[0])));
+  FXR.forEach(F=>{const w=F.fw,d=F.fd,pl=placer(F.n,F.off,0,w,d,L,W),wh='#f7f7f5';let parts;
+   if(F.t==='m')parts=[B(0,0,w,d,0,800,'#b89a74'),B(0,0,w,d,800,850,wh),Cy(w/2,d*.56,w*.33,d*.27,851,852,'#d9e1e5'),B(w/2-15,25,w/2+15,70,850,1000,'#b8bcc0')];
+   else if(F.t==='w'){const td=Math.min(170,d*.3);parts=[B(w*.12,0,w*.88,td,0,780,wh),Cy(w/2,td+(d-td)/2,w*.44,(d-td)/2,0,400,wh),Cy(w/2,td+(d-td)/2,w*.3,(d-td)/2*.68,401,402,'#dfe6e9')]}
+   else if(F.t==='s')parts=[B(0,0,w,d,0,60,wh),Cy(w/2,d/2,45,45,61,62,'#9aa0a4')];
+   else parts=[B(0,0,w,d,0,560,wh),Tp(70,70,w-70,d-70,561,'#dbe6eb')];
+   const faces=partsFaces(parts,pl);
+   if(F.t==='s'){const G=2000,sd=[];if(F.x+F.w<L-5)sd.push([F.x+F.w,F.y,F.x+F.w,F.y+F.h]);if(F.y+F.h<W-5)sd.push([F.x,F.y+F.h,F.x+F.w,F.y+F.h]);if(F.x>5)sd.push([F.x,F.y,F.x,F.y+F.h]);if(F.y>5)sd.push([F.x,F.y,F.x+F.w,F.y]);
+    sd.forEach(([a,c,d2,e])=>faces.push({p:[[a,c,60],[d2,e,60],[d2,e,G],[a,c,G]],g:true,c:'#a8d4e8'}))}
+   objs.push(mkObj(faces))});
+  return{L,W,H:Hr,planes,objs}},
+ draw3d(){const fig=$('#G-b3'),f=isoFrame(fig,L,W,H,480);
+  let fl=R(0,0,L,W,'',`fill:${col.g}`);
+  if(diag){const D=Math.hypot(L,W),pa=fa+j,pb=fb+j,nx=C(D/2/pa)+1,ny=C(D/2/pb)+1;fl+=`<g clip-path="url(#c3f)"><g transform="rotate(45 ${L/2} ${W/2})">`;
+   for(let r=-ny;r<=ny;r++)for(let c=-nx;c<=nx;c++)fl+=R(L/2+c*pa,W/2+r*pb,fa,fb,'tl',`fill:${chess&&(r+c)&1?col.f[1]:col.f[0]};stroke:${col.g}`);fl+='</g></g>'}
+  else fp.forEach(p=>fl+=R(p.x,p.y,p.w,p.h,'tl',`fill:${col.f[p.c]};stroke:${col.g}`));
+  if(drG&&drG.t==='p')fl+=R(drG.px-75,drG.py-75,150,150,'drn');
+  if(drG&&drG.t==='l'){const n=drG.n,t2=80;fl+=n===1?R(drG.o,50,drG.ll,t2,'drn'):n===3?R(drG.o,W-50-t2,drG.ll,t2,'drn'):n===2?R(L-50-t2,drG.o,t2,drG.ll,'drn'):R(50,drG.o,t2,drG.ll,'drn')}
+  const wallG=w=>{let q=R(0,0,w.S,H,'',`fill:${col.g}`);
+   w.pcs.forEach(p=>q+=R(p.x,H-p.y-p.h,p.w,p.h,'tl',`fill:${col.w[p.c]};stroke:${col.g}`));
+   w.vs.forEach(a=>seg0(H,fl2,j,0).forEach(([y,hh])=>q+=R(a,H-y-hh,fw,hh,'tl',`fill:${col.fr};stroke:${col.g}`)));
+   if(w.band)seg(w.S,fl2,j,mode).forEach(([x,ww2])=>q+=R(x,H-w.band[1],ww2,w.band[1]-w.band[0],'tl',`fill:${col.fr};stroke:${col.g}`));
+   w.o.forEach(o=>q+=R(o[0],H-o[1]-o[3],o[2],o[3],'',o[1]>0?'fill:#bcd6e6':'fill:#7d8287'));return q};
+  let b=`<g transform="${f.floor}" class="iso">${fl}</g>`;
+  b+=`<g transform="${f.w1}" class="iso">${wallG(WL[0])}${R(0,0,L,H,'','fill:#000;opacity:.03')}</g><g transform="${f.w4}" class="iso">${wallG(WL[3])}${R(0,0,W,H,'','fill:#000;opacity:.10')}</g>`;
+  const items=[...O.rects.map(o=>({x:o.x,y:o.y,w:o.w,d:o.d,s:prisms(f,[o],H,col.w[0])})),...FXR.map(F=>({x:F.x,y:F.y,w:F.w,d:F.h,s:fx3d(f,F,L,W)}))].sort((a,c)=>(a.x+a.w/2+a.y+a.d/2)-(c.x+c.w/2+c.y+c.d/2));
+  b+=items.map(i=>i.s).join('');
+  b+=isoEdges(f,L,W,H)+T(f.W/2,f.H-4,'3D изглед — виждат се стени 1 и 4 (стени 2 и 3 са махнати)','dl');
+  fig.innerHTML=svg(f,b,`<clipPath id="c3f"><rect width="${L}" height="${W}"/></clipPath>`)},
+ drawPlan(){
+  const tile=(x,y,w,h,fill,cut,nar,hx)=>R(x,y,w,h,'tl',`fill:${fill};stroke:${col.g}`)+(cut?R(x,y,w,h,'nh',`fill:url(#${hx})`):'')+(nar?R(x+1,y+1,w-2,h-2,'nw'):'');
+  let fig=$('#G-b'),f=frame(fig,L,W,360),b='',k=f.k;
+  b+=R(f.X(0),f.Y(0),L*k,W*k,'',`fill:${col.g}`);
+  if(diag){const cx=f.X(L/2),cy=f.Y(W/2),D=Math.hypot(L,W)*k,pa=(fa+j)*k,pb=(fb+j)*k;
+   b+=`<clipPath id="cpf"><rect x="${f1(f.X(0))}" y="${f1(f.Y(0))}" width="${f1(L*k)}" height="${f1(W*k)}"/></clipPath><g clip-path="url(#cpf)"><g transform="rotate(45 ${f1(cx)} ${f1(cy)})">`;
+   const nx=C(D/2/pa)+1,ny=C(D/2/pb)+1;
+   for(let r=-ny;r<=ny;r++)for(let c=-nx;c<=nx;c++)b+=R(cx+c*pa,cy+r*pb,fa*k,fb*k,'tl',`fill:${chess&&(r+c)&1?col.f[1]:col.f[0]};stroke:${col.g}`);
+   b+='</g></g>';
+  }else fp.forEach(p=>b+=tile(f.X(p.x),f.Y(p.y),p.w*k,p.h*k,col.f[p.c],p.cut,p.nar,'hx1'));
+  b+=obsDraw(f,O);
+  FXR.forEach(F=>{const n=F.n,tr=n===1?`translate(${f1(f.X(F.off))} ${f1(f.Y(0))})`:n===3?`translate(${f1(f.X(F.off+F.fw))} ${f1(f.Y(W))}) rotate(180)`:n===2?`translate(${f1(f.X(L))} ${f1(f.Y(F.off))}) rotate(90)`:`translate(${f1(f.X(0))} ${f1(f.Y(F.off+F.fw))}) rotate(-90)`;
+   b+=`<g transform="${tr} scale(${f.k})" class="iso">${fxSym(F.t,F.fw,F.fd)}</g>`;if(F.t!=='s')b+=T(f.X(F.x+F.w/2),f.Y(F.y+F.h/2)+4,FX[F.t].n.split(' ')[0],'lb')});
+  if(drG&&drG.t==='p'){const X=f.X(drG.px),Y=f.Y(drG.py),z=Math.max(150*k,12);
+   [[0,0],[L,0],[0,W],[L,W]].forEach(([a,c])=>b+=Ln(f.X(a),f.Y(c),X,Y,'env'));
+   b+=R(X-z/2,Y-z/2,z,z,'drn')+Ln(X-z/2+3,Y,X+z/2-3,Y,'',' stroke="#fff" stroke-width="1"')+T(X,Y-z/2-5,'сифон','lb')}
+  if(drG&&drG.t==='l'){const th=Math.max(80*k,7),gp=50*k,n=drG.n;let x,y,w,h,ax=0,ay=0;
+   if(n===1){x=f.X(drG.o);y=f.Y(0)+gp;w=drG.ll*k;h=th;ay=-1}else if(n===3){x=f.X(drG.o);y=f.Y(W)-gp-th;w=drG.ll*k;h=th;ay=1}
+   else if(n===2){x=f.X(L)-gp-th;y=f.Y(drG.o);w=th;h=drG.ll*k;ax=1}else{x=f.X(0)+gp;y=f.Y(drG.o);w=th;h=drG.ll*k;ax=-1}
+   b+=R(x,y,w,h,'drn');const cx2=x+w/2,cy2=y+h/2,len=Math.min(60,Math.max(L,W)*k*0.25);
+   [-1,0,1].forEach(i=>{const ox=ay?i*w/3:0,oy=ax?i*h/3:0,sx=cx2+ox-ax*(len+th),sy=cy2+oy-ay*(len+th),ex=cx2+ox-ax*(th/2+4),ey=cy2+oy-ay*(th/2+4);
+    b+=Ln(sx,sy,ex,ey,'arw',' marker-end="url(#ar)"')});
+   b+=T(cx2-ax*(len+th+10),cy2-ay*(len+th+10)+4,'наклон','lb')}
+  b+=R(f.X(0),f.Y(0),L*k,W*k,'wall');
+  if(dw>0)b+=Ln(f.X(dx),f.Y(0),f.X(dx+dw),f.Y(0),'',' stroke="var(--pn)" stroke-width="5"')+`<path d="M${f1(f.X(dx))} ${f1(f.Y(0))} L${f1(f.X(dx))} ${f1(f.Y(dw))} A${f1(dw*k)} ${f1(dw*k)} 0 0 0 ${f1(f.X(dx+dw))} ${f1(f.Y(0))}" class="arc"/>`;
+  b+=T(f.X(L/2),f.Y(0)+16,'стена 1','lb')+T(f.X(L/2),f.Y(W)-6,'стена 3','lb')+T(f.X(L)-4,f.Y(W/2),'стена 2','lb','end')+T(f.X(0)+4,f.Y(W/2),'стена 4','lb','start');
+  b+=dH(f.X(0),f.X(L),f.oy-16,m(L))+dV(f.ox-18,f.Y(0),f.Y(W),m(W));
+  fig.innerHTML=svg(f,b,hatch('hx1')+hatch('hxO')+'<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>');
+  fig=$('#G-b2');const nar2=(fig.clientWidth||640)<600,gap=250,vg=H*0.18+250,tot=nar2?L+W+gap:2*L+2*W+3*gap;f=frame(fig,tot,nar2?2*H+vg:H,nar2?460:280);b='';k=f.k;let ox=0;
+  WL.forEach((w,i)=>{const oy=nar2&&i>1?H+vg:0;if(nar2&&i===2)ox=0;const X=x=>f.X(ox+x),Y=y=>f.Y(oy+H-y);
+   b+=R(X(0),Y(H),w.S*k,H*k,'',`fill:${col.g}`);
+   w.pcs.forEach(p=>b+=tile(X(p.x),Y(p.y+p.h),p.w*k,p.h*k,col.w[p.c],p.cut,p.nar,'hx2'));
+   w.vs.forEach(a=>{let hb=[];seg0(H,fl,j,0).forEach(([y,hh])=>b+=R(X(a),Y(y+hh),fw*k,hh*k,'tl',`fill:${col.fr};stroke:${col.g}`))});
+   if(w.band)seg(w.S,fl,j,mode).forEach(([x,ww])=>b+=R(X(x),Y(w.band[1]),ww*k,(w.band[1]-w.band[0])*k,'tl',`fill:${col.fr};stroke:${col.g}`));
+   w.o.forEach(q=>b+=R(X(q[0]),Y(q[1]+q[3]),q[2]*k,q[3]*k,'open'));
+   b+=R(X(0),Y(H),w.S*k,H*k,'wall')+T(X(w.S/2),Y(H)-8,`Стена ${w.n} · ${m(w.S)}`,'lb');ox+=w.S+gap});
+  b+=dV(f.ox-18,f.Y(0),f.Y(H),m(H));
+  fig.innerHTML=svg(f,b,hatch('hx2'))}};
+}
+
+function calcF(){
+ const L=v('fL')*1000,W=v('fW')*1000,H=v('fH')*1000;if(L<500||W<500||H<1500)return null;
+ const warn=[],info=[],wc=s('fWc'),acc=+s('fAcc'),accC=s('fAccC'),kt=s('fKt'),flT=s('fFloor'),flC=s('fFc');
+ const dn=+s('fDn'),dw=v('fDW')*1000,dx=v('fDX')*1000,wn=+s('fWn'),ww=v('fWW')*1000,wh=v('fWH')*1000,wsl=v('fWS')*1000,wx=v('fWX')*1000;
+ const ops=n=>{const o=[];if(n===dn&&dw>0)o.push([dx,0,dw,Math.min(2050,H)]);if(n===wn&&ww>0)o.push([wx,wsl,ww,Math.min(wh,H-wsl)]);return o};
+ const KO={H,fr:s('fKfr'),ov:s('fKov'),mw:s('fKmw'),dw:+s('fKdw'),dr:+s('fKdr'),up:s('fKup'),uh:s('fKuh'),hd:s('fKhd'),hn:s('fKhn'),sk:s('fKsk'),bs:s('fKbs'),warn:[]};
+ const IT=st.furn.map(o=>{const D=FURN[o.t];if(!D)return null;const w=(+o.w||D.w)*10,d=(+o.d||D.d)*10,n=o.wall==='f'?'f':+o.wall,P=placer(n,(+o.x||0)*1000,(+o.g||0)*1000,w,d,L,W,+o.rot||0),a=P.pt(0,0),b=P.pt(w,d);
+  const bb=[Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[0],b[0]),Math.max(a[1],b[1])];if(bb[0]<-5||bb[1]<-5||bb[2]>L+5||bb[3]>W+5)warn.push(`${D.n}: излиза извън стаята — провери позицията.`);
+  return{o,D,w,d,n,P,bb,parts:D.p(w,d,o.c||D.c,kt,KO)}}).filter(Boolean);
+ IT.forEach((a,i)=>IT.slice(i+1).forEach(c=>{if(a.o.t==='rug'||c.o.t==='rug')return;if(a.bb[0]<c.bb[2]-50&&a.bb[2]>c.bb[0]+50&&a.bb[1]<c.bb[3]-50&&a.bb[3]>c.bb[1]+50)warn.push(`${a.D.n} и ${c.D.n} се застъпват.`)}));
+ const PN=st.pnl.map(p=>{const n=+p.wall,S=n%2?L:W,x0=(+p.x||0)*1000,w=(+p.w||0)*1000,z0=(+p.z||0)*1000,h=Math.min((+p.h||0)*1000,H-z0);if(x0+w>S+5)warn.push(`${PNL[p.t].n}: излиза извън стена ${n}.`);return{...p,n,x0,w,z0,h,area:w*h/1e6}}).filter(p=>p.w>0&&p.h>0);
+ const RKI=rkItems(L,W,H,kt,warn);
+ /* количества */
+ const rows=[],cnt={};IT.forEach(I=>{const k=`${I.D.n} ${I.w/10}×${I.d/10} см`;cnt[k]=cnt[k]||[0,I.o.c||I.D.c];cnt[k][0]++});
+ Object.entries(cnt).forEach(([k,[c,col]])=>rows.push([k,c,'бр.','мебели',col]));
+ warn.push(...new Set(KO.warn));
+ IT.filter(I=>I.parts.mods).forEach(I=>{const ag={};let plot=0,cok=0,gr=0,drn=0;I.parts.mods.forEach(([n2,q])=>{if(n2==='__plot')plot+=q;else if(n2==='__cokal')cok+=q;else if(n2==='__gryb')gr+=q;else if(n2==='__dr')drn+=q;else ag[n2]=(ag[n2]||0)+q});
+  Object.entries(ag).forEach(([n2,q])=>rows.push(['Кухня: '+n2,q,'бр.','',/Хладилник|Фурна|Съдомиялна|Микровълнова|Плот за готвене|Абсорбатор|Мивка/.test(n2)?'':I.o.c]));
+  rows.push(['Кухня: работен плот',C(plot/100)/10,'м','дълбочина 62 см',kt],['Кухня: цокъл',C(cok/100)/10,'м',''],['Кухня: гръб (стенен панел)',C(gr*10)/10,'м²','между плота и горните шкафове',KO.bs]);if(drn)rows.push(['Кухня: дръжки',drn,'бр.','≈ по 1–2 на фронт'])});
+ RKI.forEach(I=>{rows.push([`„Разкрой“, стена ${I.W0.id}: шкафове`,I.ms.length,'модула',`${fmt(I.len/1000,2)} м по стена ${I.n}`,st.rk.fc]);Object.entries(I.hw).forEach(([n2,q])=>rows.push([n2,q,'бр.','уред']));if(I.wtLen)rows.push(['Работен плот (от „Разкрой“)',C(I.wtLen/100)/10,'м','',st.rk.kt||kt])});
+ if(RKI.length)info.push('Шкафовете от „Разкрой“ са тук само за плана и рендера. Разкроят, кантът и обковът са в „Разкрой и Кантиране“.');
+ const pa={};PN.forEach(p=>{pa[p.t]=pa[p.t]||{a:0,len:0,c:p.c};pa[p.t].a+=p.area;if(p.t==='boa')boaFrames(p.x0,p.w,p.z0,p.h).forEach(([a,b,c2,d2])=>pa.boa.len+=2*((c2-a)+(d2-b))/1000)});
+ Object.entries(pa).forEach(([t,x])=>{const D=PNL[t];
+  if(t==='boa')rows.push([D.n,C(x.len*1.1/2.4),'бр. × 2,4 м',`${fmt(x.len,1)} м лайсна`,x.c],['Лепило за лайсни',C(x.len/8),'туби','']);
+  else rows.push([D.n,C(x.a/(D.pw*D.ph/1e6)*1.07),`бр. ${D.pw/10}×${D.ph/10} см`,`${fmt(x.a,2)} м² + 7%`,x.c],['Монтажно лепило за панели',C(x.a/2.5),'туби',''])});
+ const opA=[1,2,3,4].reduce((s3,n)=>s3+ops(n).reduce((a,q)=>a+q[2]*q[3],0),0)/1e6,pnA=PN.filter(p=>p.t!=='boa').reduce((a,p)=>a+p.area,0);
+ const accA=acc?((acc%2?L:W)*H/1e6-ops(acc).reduce((a,q)=>a+q[2]*q[3],0)/1e6-PN.filter(p=>p.n===acc&&p.t!=='boa').reduce((a,p)=>a+p.area,0)):0;
+ const wallA=2*(L+W)*H/1e6-opA-pnA,mainA=wallA-accA,ceilA=L*W/1e6;
+ rows.push(['Боя за стени – основен цвят',C(mainA*2*0.12),'л',`${fmt(mainA,1)} м², 2 слоя`,wc]);if(acc)rows.push(['Боя – акцентна стена',C(accA*2*0.12),'л',`${fmt(accA,1)} м², 2 слоя`,accC]);
+ rows.push(['Боя за таван (бяла)',C(ceilA*2*0.12),'л',`${fmt(ceilA,1)} м²`,'#ffffff'],['Грунд',C((wallA+ceilA)*0.1),'л','≈0,1 л/м²']);
+ const fA=L*W/1e6;if(flT==='parq'){const pk=v('pPack')||2,wp2=v('pWaste');rows.push(['Паркет (по раздел „Паркет“)',C(fA*(1+wp2/100)/pk-1e-9),'пакета',`${fmt(fA,1)} м² + ${fmt(wp2,0)}% · ${PNAME()}`,flC],['Подложка',C(fA*1.05/(v('pRoll')||10)),'ролки','']);info.push('Подът е свързан с раздел „Паркет“: размерът на дъските, подредбата и фирата се взимат оттам.')}else rows.push([{wood:'Ламинат / паркет',tile:'Плочки 60×60',tileL:'Плочки 120×60',micro:'Микроцимент'}[flT],C(fA*(flT==='micro'?1.05:1.08)*10)/10,'м²',`${fmt(fA,1)} м² + фира`,flC]);
+ if(flT==='wood'||flT==='parq')rows.push(['Первази',C((2*(L+W)/1000-dw/1000)*1.1/2.5),'бр. × 2,5 м','','#fbfbfa']);
+ info.push('Позициите са по плана: за стени 1 и 3 се мерят от стена 4, за стени 2 и 4 — от стена 1. „Свободно“ = X/Y от ъгъла на стени 4 и 1.');
+ if(IT.some(I=>I.D.k))info.push('Кухнята е схематична: хладилник-колона вляво, долни и горни шкафове по 60 см, мивка и плот за готвене. Модулите се уточняват с производителя.');
+ const shortN=I=>I.D.n.split(' ')[0];
+ return{key:[IT.length,'предмета',`${fmt(fA,1)} м² стая · ${fmt(H/1000,2)} м таван`],key2:[C(wallA*2*.12)+C(ceilA*2*.12),'л боя',`${fmt(wallA,1)} м² стени`],rows,warn:[...new Set(warn)],info,
+ prompt(pv=st.vf){const nm=colorName,fd={parq:`wood parquet flooring (${PNAME()}) in ${nm(flC)}`,wood:`wooden laminate/parquet flooring in ${nm(flC)}`,tile:`60x60 cm porcelain floor tiles in ${nm(flC)}`,tileL:`large 120x60 cm porcelain floor tiles in ${nm(flC)}`,micro:`seamless microcement floor in ${nm(flC)}`}[flT];
+  const pn=PN.map(p=>`${PNL[p.t].e} in ${nm(p.c)} on wall ${p.n} (${en(p.w/1000,2)} x ${en(p.h/1000,2)} m)`).join(', ');
+  return `Photorealistic interior render of a modern living space ${en(L/1000,2)} x ${en(W/1000,2)} m with ${en(H/1000,2)} m ceiling. Floor: ${fd}. Walls painted ${nm(wc)}${acc?`, accent wall ${acc} painted ${nm(accC)}`:''}.${pn?` Decorative wall finishes: ${pn}.`:''} Furniture: ${IT.map(I=>`${I.D.e} (${I.w/10}x${I.d/10} cm, ${nm(I.o.c||I.D.c)})`).join(', ')}${IT.some(I=>I.D.k)?`, kitchen worktop in ${nm(kt)}`:''}.${RKI.length?` Custom-made built-in cabinets (carcass ${nm(st.rk.bc)}, fronts ${nm(st.rk.fc)}${st.rk.set.wt?`, worktop ${nm(st.rk.kt||kt)}`:''}): ${RKI.map(I=>`on wall ${I.n}, ${en(I.len/1000,2)} m long: ${I.ms.map(r=>`${r.n} ${r.w/10}x${r.h/10} cm${r.row==='up'?' (wall-mounted)':''}`).join(', ')}`).join('; ')}.`:''}${ww>0?' Large window with soft daylight.':''} ${camFor(pv,n=>n%2?L:W,n=>[...IT.filter(I=>I.n===n).map(I=>I.D.e),...RKI.filter(I=>I.n===n).map(()=>'custom built-in cabinets'),...PN.filter(p=>p.n===n).map(p=>PNL[p.t].e),...ops(n).map(o=>o[1]>0?'a window':'the door'),...(IT.some(I=>I.n==='f')?['in the middle of the room: '+IT.filter(I=>I.n==='f').map(I=>I.D.e).join(', ')]:[])].join(', '))}, warm natural light, contemporary style, architectural interior photography, 4k.`},
+ scene(){const fI=[];
+  if(flT==='parq')fI.push(...genBoards(L,W,PO(),(i,r)=>shade(flC,[1,.95,1.04,.92,.98][(i*7+r)%5])).map(q=>({...q,s:shade(flC,.72),sw:.4})));
+  else if(flT==='wood'){const bl=1380,bw=193;let r=0,i=0;for(let y=0;y<W;y+=bw,r++){let x=-(r%3)*bl/3;for(;x<L;x+=bl){fI.push({p:fr4(Math.max(0,x),y,Math.min(L,x+bl),Math.min(W,y+bw)),c:shade(flC,[1,.95,1.04,.92,.98][(i++*7+r)%5]),s:shade(flC,.75),sw:.4})}}}
+  else if(flT!=='micro'){const a=flT==='tileL'?1200:600,b=600;for(let y=0;y<W;y+=b+2)for(let x=0;x<L;x+=a+2)fI.push({p:fr4(x,y,Math.min(L,x+a),Math.min(W,y+b)),c:flC})}
+  const planes={f:{base:fr4(0,0,L,W),c:flT==='micro'?flC:shade(flC,.8),items:fI}};
+  [1,2,3,4].forEach(n=>{const S=n%2?L:W,it=[],q=(u0,z0,u1,z1,c,s3)=>it.push({p:wr4(n,u0,z0,u1,z1,L,W),c,s:s3,sw:1.2});
+   PN.filter(p=>p.n===n).forEach(p=>{const{x0,w,z0,h,c}=p;
+    if(p.t==='lam'){q(x0,z0,x0+w,z0+h,'#262626');for(let u=x0+6;u<x0+w-20;u+=40)q(u,z0,u+28,z0+h,c)}
+    else if(p.t==='3d'){for(let z=z0;z<z0+h-1;z+=500)for(let u=x0;u<x0+w-1;u+=500)q(u,z,Math.min(x0+w,u+500),Math.min(z0+h,z+500),shade(c,((u-x0)/500+(z-z0)/500)%2?.9:1.04))}
+    else if(p.t==='pvc')q(x0,z0,x0+w,z0+h,c);
+    else{q(x0,z0,x0+w,z0+h,c);boaFrames(x0,w,z0,h).forEach(([a,b2,c2,d2])=>q(a,b2,c2,d2,'none',shade(c,.7)))}});
+   ops(n).forEach(o=>{if(o[1]<=0){q(o[0],0,o[0]+o[2],o[3],'#8a6f55');q(o[0]+o[2]*.82,o[3]*.47,o[0]+o[2]*.9,o[3]*.5,'#d0d0d0')}else{q(o[0]-30,o[1]-30,o[0]+o[2]+30,o[1]+o[3]+30,'#f6f6f4');q(o[0]+40,o[1]+40,o[0]+o[2]-40,o[1]+o[3]-40,'#bfe0ef')}});
+   if(flT==='wood'||flT==='parq')q(0,0,S,70,'#fbfbfa');
+   planes['w'+n]={base:wr4(n,0,0,S,H,L,W),c:acc===n?accC:wc,lf:WLF[n],items:it}});
+  return{L,W,H,planes,objs:[...IT.map(I=>mkObj(partsFaces(I.parts,I.P))),...RKI.map(I=>mkObj(partsFaces(I.parts,I.P)))]}},
+ draw(){const vw=curView('f'),A=vw==='all';showFigs('f',vw);
+  if(A||vw==='plan')this.drawPlan();if(A||vw==='top')render3d($('#G-f4'),this.scene(),'top',560);if(A||vw==='walls')renderWalls($('#G-f5'),this.scene(),'Обзавеждане')},
+ drawPlan(){const fig=$('#G-f'),f=frame(fig,L,W,520),k=f.k;fig._k=k;let b=R(f.X(0),f.Y(0),L*k,W*k,'',`fill:${flT==='micro'?flC:shade(flC,1.05)}`);
+  if(flT==='parq')b+=`<clipPath id="cpf2"><rect x="${f1(f.X(0))}" y="${f1(f.Y(0))}" width="${f1(L*k)}" height="${f1(W*k)}"/></clipPath><g clip-path="url(#cpf2)">`+genBoards(L,W,PO(),(i,r)=>shade(flC,[1,.95,1.04,.92,.98][(i*7+r)%5])).map(q=>`<polygon points="${q.p.map(p2=>f1(f.X(p2[0]))+','+f1(f.Y(p2[1]))).join(' ')}" fill="${q.c}" stroke="${shade(flC,.75)}" stroke-width=".5"/>`).join('')+'</g>';
+  else if(flT!=='micro'){const st2=flT==='wood'?193:600;for(let y=st2;y<W;y+=st2)b+=Ln(f.X(0),f.Y(y),f.X(L),f.Y(y),'',` stroke="${shade(flC,.82)}" stroke-width=".6"`);if(flT!=='wood'){const a2=flT==='tileL'?1200:600;for(let x=a2;x<L;x+=a2)b+=Ln(f.X(x),f.Y(0),f.X(x),f.Y(W),'',` stroke="${shade(flC,.82)}" stroke-width=".6"`)}}
+  IT.forEach(I=>{b+=`<g data-fi="${st.furn.indexOf(I.o)}" style="cursor:grab">`;const pp=I.parts.map(q=>({...q})).sort((a,c)=>a.z1-c.z1);pp.forEach(q=>{if(q.t==='cyl'){const[cx,cy]=I.P.pt(q.u,q.v),rx=(I.P.sw?q.rv:q.ru)*k,ry=(I.P.sw?q.ru:q.rv)*k;b+=`<ellipse cx="${f1(f.X(cx))}" cy="${f1(f.Y(cy))}" rx="${f1(rx)}" ry="${f1(ry)}" fill="${q.c}" stroke="${shade(q.c,.6)}" stroke-width=".8"/>`}
+   else{const a=I.P.pt(q.u0,q.v0),c=I.P.pt(q.u1,q.v1);b+=R(f.X(Math.min(a[0],c[0])),f.Y(Math.min(a[1],c[1])),Math.abs(c[0]-a[0])*k,Math.abs(c[1]-a[1])*k,'',`fill:${q.c};stroke:${shade(q.c,.6)};stroke-width:.8`)}});
+   if((I.bb[2]-I.bb[0])*k>46&&I.o.t!=='rug')b+=T(f.X((I.bb[0]+I.bb[2])/2),f.Y((I.bb[1]+I.bb[3])/2)+4,shortN(I),'lb');b+='</g>'});
+  RKI.forEach(I=>{b+='<g>';I.parts.slice().sort((a,c)=>a.z1-c.z1).forEach(q=>{const a=I.P.pt(q.u0,q.v0),c=I.P.pt(q.u1,q.v1);b+=R(f.X(Math.min(a[0],c[0])),f.Y(Math.min(a[1],c[1])),Math.abs(c[0]-a[0])*k,Math.abs(c[1]-a[1])*k,'',`fill:${q.c};stroke:${shade(q.c,.6)};stroke-width:.6`)});if((I.bb[2]-I.bb[0])*k>60)b+=T(f.X((I.bb[0]+I.bb[2])/2),f.Y((I.bb[1]+I.bb[3])/2)+4,'Разкрой '+I.W0.id,'lb');b+='</g>'});
+  const wl=(n,a,c)=>n===1?[f.X(a),f.Y(0),f.X(c),f.Y(0)]:n===3?[f.X(a),f.Y(W),f.X(c),f.Y(W)]:n===2?[f.X(L),f.Y(a),f.X(L),f.Y(c)]:[f.X(0),f.Y(a),f.X(0),f.Y(c)];
+  PN.forEach(p=>{const z=wl(p.n,p.x0,p.x0+p.w);b+=Ln(...z,'',` stroke="${p.c}" stroke-width="7"`)});
+  b+=R(f.X(0),f.Y(0),L*k,W*k,'wall');
+  if(acc){const z=wl(acc,0,acc%2?L:W);b+=Ln(...z,'',` stroke="${accC}" stroke-width="4"`)}
+  if(ww>0){const z=wl(wn,wx,wx+ww);b+=Ln(...z,'',' stroke="#9fd0e6" stroke-width="5"')}
+  if(dw>0){const z=wl(dn,dx,dx+dw);b+=Ln(...z,'',' stroke="var(--pn)" stroke-width="5"');const hx=z[0],hy=z[1],ex=z[2],ey=z[3],nx=dn===1?0:dn===3?0:dn===2?-1:1,ny=dn===1?1:dn===3?-1:0,lx=hx+nx*dw*k,ly=hy+ny*dw*k,cr=(lx-hx)*(ey-hy)-(ly-hy)*(ex-hx);
+   b+=`<path d="M${f1(hx)} ${f1(hy)} L${f1(lx)} ${f1(ly)} A${f1(dw*k)} ${f1(dw*k)} 0 0 ${cr>0?1:0} ${f1(ex)} ${f1(ey)}" class="arc"/>`}
+  b+=T(f.X(L/2),f.Y(0)-5,'стена 1','dl')+T(f.X(L/2),f.Y(W)+13,'стена 3','dl')+dH(f.X(0),f.X(L),f.oy-20,m(L))+dV(f.ox-18,f.Y(0),f.Y(W),m(W));
+  fig.innerHTML=svg(f,b)}};
+}
+/* ---------- изход ---------- */
+const CALC={p:calcP,d:calcD,b:calcB,f:calcF};const LAST={};
+function vis(t){document.querySelectorAll('#F-'+t+' [data-m]').forEach(e=>{const mm=e.dataset.m;if(!mm){e.hidden=false;return}e.hidden=!mm.split('&').every(c=>{const[id,vals]=c.split(':');return vals.split('|').includes(s(id))})})}
+function run(t){
+ vis(t);const r=CALC[t]();LAST[t]=r;
+ if(!r){$('#K-'+t).innerHTML='<span>Въведи размерите вляво.</span>';$('#T-'+t).innerHTML='';$('#G-'+t).innerHTML='';$('#N-'+t).innerHTML='';return}
+ $('#K-'+t).innerHTML=[r.key,r.key2].map(k=>`<div><b>${fmt(k[0],0)}</b> ${k[1]}<br><span>${k[2]}</span></div>`).join('');
+ $('#N-'+t).innerHTML=r.warn.map(x=>`<li class="w">${x}</li>`).join('')+r.info.map(x=>`<li>${x}</li>`).join('');
+ r.rows=r.rows.filter(x=>x[1]>0);
+ $('#T-'+t).innerHTML=`<table class="stack"><thead><tr><th>Материал</th><th class="n">Кол.</th><th>Ед.</th><th>Бележка</th><th class="n">Цена/ед., €</th><th class="n">Сума, €</th></tr></thead><tbody>${r.rows.map(x=>`<tr><td>${x[4]?`<span class="sw" style="background:${x[4]}"></span>`:''}${x[0]}</td><td class="n">${fmt(x[1],1)}</td><td>${x[2]}</td><td class="nt">${x[3]}</td><td class="n"><input type="number" min="0" step="0.01" inputmode="decimal" data-k="${t}|${x[0]}" value="${st.pr[t+'|'+x[0]]??''}" aria-label="Цена за ${x[0]}"></td><td class="n" data-s></td></tr>`).join('')}</tbody><tfoot><tr><td colspan="5">Общо</td><td class="n" id="S-${t}"></td></tr></tfoot></table><div class="act"><button type="button" data-copy="${t}">Копирай списъка</button><button type="button" data-print="${t}">Печат / PDF – ${{p:'паркет',d:'гипсокартон',b:'баня',f:'обзавеждане',m:'мебели'}[t]}</button>${r.prompt?`<button type="button" data-ai="${t}">Текст за AI рендер</button>`:''}<span class="small" id="C-${t}" aria-live="polite"></span></div>${r.extra||''}<div class="aibox noprint" id="AI-${t}" hidden><p class="small">Постави текста в генератор на изображения (ChatGPT, Gemini и др.) и прикачи картинката с всички изгледи отдолу — така AI вижда размерите, цветовете и подредбата. Описанието е на английски, защото така резултатът е най-добър.</p><label class="small aiv">Ракурс за AI: <select data-aiv="${t}">${[['all','Всички изгледи'],['top','Отгоре'],['1','Стена 1'],['2','Стена 2'],['3','Стена 3'],['4','Стена 4']].map(([v2,l])=>`<option value="${v2}">${l}</option>`).join('')}</select></label><textarea readonly rows="6"></textarea><div class="act"><a class="btn" download="izgledi-${t}.png" hidden>Свали картинката (PNG)</a><button type="button" data-aicopy="${t}" hidden>Копирай картинката</button><span class="small aist"></span></div><img class="aiimg" alt="Всички изгледи за AI" hidden></div>`;
+ sums(t);r.draw();
+}
+function sums(t){let tot=0;const rows=LAST[t]?LAST[t].rows:[];
+ document.querySelectorAll(`#T-${t} table.stack>tbody>tr`).forEach((tr,i)=>{const p=parseFloat(tr.querySelector('input').value)||0,sm=p*rows[i][1];tot+=sm;tr.querySelector('[data-s]').textContent=p?fmt(sm):''});
+ const el=$('#S-'+t);if(el)el.textContent=tot?fmt(tot)+' €':'—'}
+document.addEventListener('change',e=>{const t=e.target.dataset&&e.target.dataset.aiv;if(t)aiGo(t)});
+document.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.k;if(!k)return;st.pr[k]=e.target.value;save();sums(k.split('|')[0])});
+document.addEventListener('click',async e=>{const t=e.target.dataset&&e.target.dataset.copy;if(!t)return;const r=LAST[t];if(!r)return;
+ const head={p:'Паркет',d:'Гипсокартон — '+(LAST.d?LAST.d.title:''),b:'Плочки за баня',f:'Обзавеждане',m:'Мебели по поръчка'}[t];
+ const txt=head+'\n'+r.rows.map(x=>`• ${x[0]} — ${fmt(x[1],1)} ${x[2]} (${x[3]})${x[4]?' цвят '+x[4]:''}`).join('\n')+'\n'+($('#S-'+t).textContent!=='—'?'Общо: '+$('#S-'+t).textContent:'');
+ try{await navigator.clipboard.writeText(txt);$('#C-'+t).textContent='Копирано.'}catch(err){$('#C-'+t).textContent='Браузърът не позволи копиране.'}});
+const inFrame=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+function summary(t){const it=[];FIELDS[t].forEach(o=>{if(!o.id)return;const el=$('#'+o.id),lab=el.closest('.fl');if(lab&&lab.hidden)return;
+  const val=o.o?el.options[el.selectedIndex]?.text:o.c?`<span class="sw" style="background:${el.value}"></span>${el.value}`:`${el.value} ${o.u}`;it.push(`<div>${o.l}: <b>${val}</b></div>`)});
+ if(t==='f')st.furn.forEach((o,i)=>{const D=FURN[o.t];if(D)it.push(`<div>${D.n}: <b>${o.w}×${o.d} см, ${o.wall==='f'?`свободно ${o.x}/${o.g} м, ${o.rot}°`:`стена ${o.wall}, ${o.x} м`}</b></div>`)});
+ if(t==='f')st.pnl.forEach(o=>it.push(`<div>${PNL[o.t].n}: <b>стена ${o.wall}, ${o.w}×${o.h} м</b></div>`));
+ if(t==='p'||t==='b')st['obs'+t].forEach((o,i)=>it.push(`<div>${{c:'Комин',k:'Колона',s:'Щранг'}[o.t]||'Обект'} ${i+1}: <b>${o.w}×${o.d} см, на ${o.x} м / ${o.y} м</b></div>`));
+ $('#PS-'+t).innerHTML=it.join('');$('#PT-'+t).textContent={p:'Паркет',d:'Гипсокартон — '+(LAST.d?LAST.d.title:''),b:'Плочки за баня',f:'Обзавеждане'}[t]}
+function doPrint(which,btnT){
+ if(inFrame){document.querySelectorAll('[id^=C-]').forEach(e=>e.textContent='Печатът е спрян в този преглед. Отвори HTML файла в браузъра и натисни „Печат / PDF“ там.');return}
+ const tabs=which==='all'?['p','d','b']:[which];
+ document.body.classList.add('printing');if(which==='all')document.body.classList.add('pall');
+ $('#pdate').textContent='Калкулатор за ремонт · '+new Date().toLocaleDateString('bg-BG');
+ tabs.forEach(t=>{run(t);summary(t);
+  if(t==='d'&&LAST.d){const pv=LAST.d.printViews,px=$('#PX-d');px.innerHTML=pv.map((x,i)=>`<div class="pcap">${x[2]}</div><div class="fig" id="PXF${i}"></div>`).join('')+'<div class="leg">'+LG.cw+LG.uw+LG.ua+LG.hg+LG.spl+LG.gk+'</div>';
+   pv.forEach(([pp,vv],i)=>pp.draw($('#PXF'+i),vv))}});
+ setTimeout(()=>window.print(),80)}
+window.addEventListener('afterprint',()=>{document.body.classList.remove('printing','pall');$('#PX-d').innerHTML='';show()});
+document.addEventListener('click',async e=>{const d=e.target.dataset||{};if(d.print)doPrint(d.print);
+ if(d.vw){const[t,vv]=d.vw.split('|');st['v'+t]=vv;save();LAST[t]&&LAST[t].draw()}
+ if(d.ai&&LAST[d.ai]){$('#AI-'+d.ai).hidden=false;aiGo(d.ai)}
+ if(d.aicopy){const box=$('#AI-'+d.aicopy);try{await navigator.clipboard.write([new ClipboardItem({'image/png':box._blob})]);box.querySelector('.aist').textContent='Картинката е копирана — постави я в чата с AI.'}catch(err){box.querySelector('.aist').textContent='Браузърът не позволи копиране — свали картинката.'}}});
+const STP=['fill','stroke','stroke-width','stroke-dasharray','stroke-linejoin','opacity','fill-opacity','stroke-opacity','font-size','font-weight','font-family','paint-order','text-anchor','vector-effect'];
+function inl(sv){const cl=sv.cloneNode(true),A=[sv,...sv.querySelectorAll('*')],Bc=[cl,...cl.querySelectorAll('*')];A.forEach((e,i)=>{const cs=getComputedStyle(e);Bc[i].setAttribute('style',STP.map(p2=>`${p2}:${cs.getPropertyValue(p2)}`).join(';'))});
+ const vb=sv.viewBox.baseVal,S3=Math.max(1,1600/vb.width);cl.setAttribute('width',vb.width*S3);cl.setAttribute('height',vb.height*S3);cl.setAttribute('xmlns','http://www.w3.org/2000/svg');return cl}
+async function aiGo(t){const box=$('#AI-'+t),ta=box.querySelector('textarea'),vw=box.querySelector('[data-aiv]').value;ta.value=LAST[t].prompt(vw==='all'?'walls':vw);
+ try{await navigator.clipboard.writeText(ta.value);$('#C-'+t).textContent='Текстът е копиран.'}catch(err){$('#C-'+t).textContent='Копирай текста от полето.'}
+ box.querySelector('.aist').textContent='Подготвям картинката…';try{const blob=await aiImage(t,vw),url=URL.createObjectURL(blob),im=box.querySelector('.aiimg'),a=box.querySelector('a.btn');im.src=url;im.hidden=false;a.href=url;a.hidden=false;box.querySelector('[data-aicopy]').hidden=!window.ClipboardItem;box._blob=blob;box.querySelector('.aist').textContent=inFrame?'В този преглед свалянето може да е спряно — задръж/десен бутон върху картинката и „Запази“.':''}catch(err){box.querySelector('.aist').textContent='Картинката не можа да се създаде: '+err.message}}
+async function aiImage(t,vw='all'){FORCE=true;LAST[t].draw();await new Promise(r=>setTimeout(r,40));
+ const ok=c=>vw==='all'||/план/i.test(c)||(vw==='top'&&/отгоре/i.test(c))||(new RegExp('стена '+vw+' \\(').test(c));
+ const figs=[...document.querySelectorAll(`#P-${t} .fig[data-cap]`)].filter(f=>f.querySelector('svg')&&!f.closest('[hidden]')&&ok(f.dataset.cap)&&!(vw!=='all'&&/развивка|изометрия/i.test(f.dataset.cap)));const ims=[];
+ for(const fg of figs){const sv=fg.querySelector('svg'),vb=sv.viewBox.baseVal,img=new Image();img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(inl(sv)));
+  try{await img.decode()}catch(e){continue}ims.push({img,cap:fg.dataset.cap,w:vb.width,h:vb.height,full:vw!=='all'||!/стена \d/.test(fg.dataset.cap)})}
+ FORCE=false;LAST[t].draw();
+ const pad=30,CW=760,gap=26,TW=2*CW+gap,cap=34;let y=90;const lay=[];let row=[];
+ const flush=()=>{if(!row.length)return;const hh=Math.max(...row.map(r=>r.h*CW/r.w));row.forEach((r,i)=>lay.push({...r,x:pad+i*(CW+gap),y:y+cap,dw:CW,dh:r.h*CW/r.w}));y+=hh+cap+gap;row=[]};
+ ims.forEach(r=>{if(r.full){flush();const dh=r.h*TW/r.w;lay.push({...r,x:pad,y:y+cap,dw:TW,dh});y+=dh+cap+gap}else{row.push(r);if(row.length===2)flush()}});flush();
+ const cv=document.createElement('canvas');cv.width=TW+2*pad;cv.height=y+pad;const g=cv.getContext('2d');g.fillStyle='#ffffff';g.fillRect(0,0,cv.width,cv.height);
+ g.fillStyle='#151311';g.font='700 34px system-ui,sans-serif';g.fillText({p:'Паркет',b:'Баня',f:'Обзавеждане',d:'Гипсокартон'}[t]+' — изгледи за AI рендер',pad,52);
+ g.font='16px system-ui,sans-serif';g.fillStyle='#625c55';g.fillText('Калкулатор за ремонт · '+new Date().toLocaleDateString('bg-BG'),pad,78);
+ lay.forEach(r=>{g.fillStyle='#151311';g.font='600 20px system-ui,sans-serif';g.fillText(r.cap,r.x,r.y-10);g.drawImage(r.img,r.x,r.y,r.dw,r.dh)});
+ return await new Promise((res,rej)=>cv.toBlob(b2=>b2?res(b2):rej(new Error('празно')),'image/png'))}
+function dragOn(figId,sel,onStart,onMove,onEnd){const fig=$(figId);let D=null;
+ fig.addEventListener('pointerdown',e=>{const g=e.target.closest(sel);if(!g)return;D={sx:e.clientX,sy:e.clientY,moved:false,ref:onStart(g)};if(!D.ref){D=null;return}fig.setPointerCapture(e.pointerId);e.preventDefault()});
+ fig.addEventListener('pointermove',e=>{if(!D)return;const dx=(e.clientX-D.sx)/(fig._k||1),dy=(e.clientY-D.sy)/(fig._k||1);if(!D.moved&&Math.hypot(e.clientX-D.sx,e.clientY-D.sy)<4)return;D.moved=true;onMove(D.ref,dx,dy)});
+ const up=()=>{if(!D)return;const d2=D;D=null;onEnd(d2.ref,d2.moved)};fig.addEventListener('pointerup',up);fig.addEventListener('pointercancel',up)}
+dragOn('#G-f','[data-fi]',g=>{const o=st.furn[+g.dataset.fi];return o?{o,x:+o.x||0,g:+o.g||0}:null},(R2,dx,dy)=>{const o=R2.o,n=o.wall;
+  if(n==='f'){o.x=Math.max(0,R2.x+dx/1000).toFixed(2);o.g=Math.max(0,R2.g+dy/1000).toFixed(2)}else o.x=Math.max(0,R2.x+((n==='1'||n==='3')?dx:dy)/1000).toFixed(2);
+  const r=calcF();if(r){LAST.f=r;r.drawPlan()}},(R2,moved)=>{save();renderFurn();run('f')});
+
+function show(){const h=location.hash.slice(1);const t=Object.keys(NAMES).find(k=>NAMES[k]===h)||'p';
+ for(const k in NAMES){$('#P-'+k).hidden=k!==t;document.querySelector(`.tabs a[data-t=${k}]`).setAttribute('aria-selected',k===t)}
+ run(t)}
+window.addEventListener('hashchange',show);
+let rt;new ResizeObserver(()=>{clearTimeout(rt);rt=setTimeout(()=>{for(const k in NAMES)if(!$('#P-'+k).hidden&&LAST[k])LAST[k].draw()},60)}).observe(document.querySelector('main'));
+show();
+}
+</script>
+</body>
+</html>
